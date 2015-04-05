@@ -37,7 +37,6 @@ using apache::thrift::transport::TTransportFactory;
 
 class TThreadPoolServer : public TServer {
 public:
-  class Task;
 
   template <typename ProcessorFactory>
   TThreadPoolServer(const boost::shared_ptr<ProcessorFactory>& processorFactory,

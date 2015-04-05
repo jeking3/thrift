@@ -31,6 +31,8 @@ namespace apache {
 namespace thrift {
 namespace server {
 
+class TConnectedClient;
+
 using apache::thrift::TProcessor;
 using apache::thrift::transport::TServerTransport;
 using apache::thrift::transport::TTransportFactory;
@@ -40,7 +42,6 @@ using apache::thrift::concurrency::ThreadFactory;
 class TThreadedServer : public TServer {
 
 public:
-  class Task;
 
   template <typename ProcessorFactory>
   TThreadedServer(const boost::shared_ptr<ProcessorFactory>& processorFactory,
@@ -79,12 +80,13 @@ public:
 
 protected:
   void init();
+  void disposeClient(TConnectedClient *pClient);
 
   boost::shared_ptr<ThreadFactory> threadFactory_;
   volatile bool stop_;
 
-  Monitor tasksMonitor_;
-  std::set<Task*> tasks_;
+  Monitor clientsMonitor_;
+  std::set<TConnectedClient*> clients_;
 };
 
 template <typename ProcessorFactory>
