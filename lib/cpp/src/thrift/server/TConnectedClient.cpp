@@ -31,15 +31,13 @@ using apache::thrift::transport::TTransportException;
 using boost::shared_ptr;
 using std::string;
 
-TConnectedClient::TConnectedClient(const string& serverType,
-                                   const shared_ptr<TProcessor>& processor,
+TConnectedClient::TConnectedClient(const shared_ptr<TProcessor>& processor,
                                    const shared_ptr<TProtocol>& inputProtocol,
                                    const shared_ptr<TProtocol>& outputProtocol,
                                    const shared_ptr<TServerEventHandler>& eventHandler,
                                    const shared_ptr<TTransport>& client)
                         
-  : serverType_(serverType),
-    processor_(processor),
+  : processor_(processor),
     inputProtocol_(inputProtocol),
     outputProtocol_(outputProtocol),
     eventHandler_(eventHandler),
@@ -78,13 +76,13 @@ void TConnectedClient::run() {
         {
           // All other transport exceptions are logged.
           // State of connection is unknown.  Done.
-          string errStr = (serverType_ + " client died: ") + ttx.what();
+          string errStr = string("TConnectedClient died: ") + ttx.what();
           GlobalOutput(errStr.c_str());
           break;
         }
       }
     } catch (const TException& tex) {
-      string errStr = (serverType_ + " processing exception: ") + tex.what();
+      string errStr = string("TConnectedClient processing exception: ") + tex.what();
       GlobalOutput(errStr.c_str());
       // Continue processing
     }
@@ -102,19 +100,21 @@ void TConnectedClient::cleanup()
   try {
     inputProtocol_->getTransport()->close();
   } catch (const TTransportException& ttx) {
-    string errStr = string(serverType_ + " input close failed: ") + ttx.what();
+    string errStr = string("TConnectedClient input close failed: ") + ttx.what();
     GlobalOutput(errStr.c_str());
   }
+
   try {
     outputProtocol_->getTransport()->close();
   } catch (const TTransportException& ttx) {
-    string errStr = string(serverType_ + " output close failed: ") + ttx.what();
+    string errStr = string("TConnectedClient output close failed: ") + ttx.what();
     GlobalOutput(errStr.c_str());
   }
+
   try {
     client_->close();
   } catch (const TTransportException& ttx) {
-    string errStr = string(serverType_ + " client close failed: ") + ttx.what();
+    string errStr = string("TConnectedClient client close failed: ") + ttx.what();
     GlobalOutput(errStr.c_str());
   }
 }

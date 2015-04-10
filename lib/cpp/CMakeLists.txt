@@ -59,6 +59,7 @@ set( thriftcpp_SOURCES
    src/thrift/transport/TBufferTransports.cpp
    src/thrift/server/TConnectedClient.cpp
    src/thrift/server/TServer.cpp
+   src/thrift/server/TServerFramework.cpp
    src/thrift/server/TSimpleServer.cpp
    src/thrift/server/TThreadPoolServer.cpp
    src/thrift/server/TThreadedServer.cpp
