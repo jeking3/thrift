@@ -105,7 +105,7 @@ protected:
    * The client TTransport has already been closed.
    * The implementation must not delete the pointer.
    *
-   * \param[in]  pClient  the newly connected client
+   * \param[in]  pClient  the disconnected client
    */
   virtual void onClientDisconnected(TConnectedClient *pClient) = 0;
 

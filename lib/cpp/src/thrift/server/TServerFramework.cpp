@@ -133,6 +133,7 @@ void TServerFramework::serve() {
           // Accept timeout - continue processing.
           continue;
 
+        case TTransportException::END_OF_FILE:
         case TTransportException::INTERRUPTED:
           // Server was interrupted.  This only happens when stopping.
           break;
