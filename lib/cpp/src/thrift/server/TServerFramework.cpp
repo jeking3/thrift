@@ -126,6 +126,16 @@ void TServerFramework::serve() {
       inputTransport.reset();
       client.reset();
 
+      // If we have reached the limit on the number of concurrent
+      // clients allowed, wait for one or more clients to drain before
+      // accepting another.
+      {
+          Synchronized sync(mon_);
+          while (clients_ >= limit_) {
+              mon_.wait();
+          }
+      }
+
       client = serverTransport_->accept();
 
       inputTransport = inputTransportFactory_->getTransport(client);
@@ -138,6 +148,7 @@ void TServerFramework::serve() {
                       new TConnectedClient(getProcessor(inputProtocol, outputProtocol, client),
                                            inputProtocol, outputProtocol, eventHandler_, client),
                       bind(&TServerFramework::disposeConnectedClient, this, _1)));
+
     } catch (TTransportException& ttx) {
       releaseOneDescriptor("inputTransport", inputTransport);
       releaseOneDescriptor("outputTransport", outputTransport);
@@ -183,7 +194,9 @@ void TServerFramework::setConcurrentClientLimit(int64_t newLimit) {
   }
   Synchronized sync(mon_);
   limit_ = newLimit;
-  mon_.notifyAll();
+  if (limit_ - clients_ > 0) {
+    mon_.notify();
+  }
 }
 
 void TServerFramework::stop() {
@@ -194,24 +207,19 @@ void TServerFramework::stop() {
 void TServerFramework::newlyConnectedClient(const boost::shared_ptr<TConnectedClient>& pClient) {
   onClientConnected(pClient);
 
-  // Count another concurrent client, if after counting
-  // we've reached the limit, block the serve() thread from
-  // accepting anything else.
-  {
-    Synchronized sync(mon_);
-    ++clients_;
-    hwm_ = std::max(hwm_, clients_);
-    while (clients_ >= limit_) {
-      mon_.wait();
-    }
-  }
+  // Count a concurrent client added.
+  Synchronized sync(mon_);
+  ++clients_;
+  hwm_ = std::max(hwm_, clients_);
 }
 
 void TServerFramework::disposeConnectedClient(TConnectedClient *pClient) {
   {
+    // Count a concurrent client removed.
     Synchronized sync(mon_);
-    --clients_;
-    mon_.notify();
+    if (limit_ - --clients_ > 0) {
+      mon_.notify();
+    }
   }
   onClientDisconnected(pClient);
   delete pClient;
