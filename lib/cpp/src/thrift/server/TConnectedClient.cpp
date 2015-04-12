@@ -51,7 +51,7 @@ void TConnectedClient::run() {
     opaqueContext_ = eventHandler_->createContext(inputProtocol_, outputProtocol_);
   }
 
-  for (;;) {
+  for (bool done = false; !done; ) {
     if (eventHandler_) {
       eventHandler_->processContext(opaqueContext_, client_);
     }
@@ -70,6 +70,7 @@ void TConnectedClient::run() {
         case TTransportException::END_OF_FILE:
         case TTransportException::INTERRUPTED:
           // Client disconnected or was interrupted.  No logging needed.  Done.
+          done = true;
           break;
 
         default:
@@ -78,6 +79,7 @@ void TConnectedClient::run() {
           // State of connection is unknown.  Done.
           string errStr = string("TConnectedClient died: ") + ttx.what();
           GlobalOutput(errStr.c_str());
+          done = true;
           break;
         }
       }

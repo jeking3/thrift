@@ -101,7 +101,7 @@ void TServerFramework::serve() {
   }
 
   // Fetch client from server
-  for (;;) {
+  for (bool done = false; !done; ) {
     try {
       // Dereference any resources from any previous client creation
       // such that a blocking accept does not hold them indefinitely.
@@ -136,6 +136,7 @@ void TServerFramework::serve() {
         case TTransportException::END_OF_FILE:
         case TTransportException::INTERRUPTED:
           // Server was interrupted.  This only happens when stopping.
+          done = true;
           break;
 
         default:
@@ -144,6 +145,7 @@ void TServerFramework::serve() {
           // State of server is unknown.  Done.
           string errStr = string("TServerTransport died: ") + ttx.what();
           GlobalOutput(errStr.c_str());
+          done = true;
           break;
         }
       }
