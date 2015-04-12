@@ -61,29 +61,24 @@ void TConnectedClient::run() {
         break;
       }
     } catch (const TTransportException& ttx) {
-      switch (ttx.getType())
-      {
-        case TTransportException::TIMED_OUT:
-          // Receive timeout - continue processing.
-          continue;
-
-        case TTransportException::END_OF_FILE:
-        case TTransportException::INTERRUPTED:
-          // Client disconnected or was interrupted.  No logging needed.  Done.
-          done = true;
-          break;
-
-        default:
-        {
-          // All other transport exceptions are logged.
-          // State of connection is unknown.  Done.
-          string errStr = string("TConnectedClient died: ") + ttx.what();
-          GlobalOutput(errStr.c_str());
-          done = true;
-          break;
-        }
+      if (ttx.getType() == TTransportException::TIMED_OUT) {
+        // Receive timeout - continue processing.
+        continue;
+      } else if (ttx.getType() == TTransportException::END_OF_FILE ||
+                 ttx.getType() == TTransportException::INTERRUPTED) {
+        // Client disconnected or was interrupted.  No logging needed.  Done.
+        break;
+      } else {
+        // All other transport exceptions are logged.
+        // State of connection is unknown.  Done.
+        string errStr = string("TConnectedClient died: ") + ttx.what();
+        GlobalOutput(errStr.c_str());
+        break;
       }
     } catch (const TException& tex) {
+      // Some protocols throw this after they send an error response to the client
+      // They should be trained to return true instead and if they want to log,
+      // then they should log.
       string errStr = string("TConnectedClient processing exception: ") + tex.what();
       GlobalOutput(errStr.c_str());
       // Continue processing
