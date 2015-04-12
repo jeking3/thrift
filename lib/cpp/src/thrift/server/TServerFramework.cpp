@@ -101,7 +101,7 @@ void TServerFramework::serve() {
   }
 
   // Fetch client from server
-  for (bool done = false; !done; ) {
+  for (;;) {
     try {
       // Dereference any resources from any previous client creation
       // such that a blocking accept does not hold them indefinitely.
@@ -127,27 +127,19 @@ void TServerFramework::serve() {
       releaseOneDescriptor("inputTransport", inputTransport);
       releaseOneDescriptor("outputTransport", outputTransport);
       releaseOneDescriptor("client", client);
-      switch (ttx.getType())
-      {
-        case TTransportException::TIMED_OUT:
-          // Accept timeout - continue processing.
-          continue;
-
-        case TTransportException::END_OF_FILE:
-        case TTransportException::INTERRUPTED:
-          // Server was interrupted.  This only happens when stopping.
-          done = true;
-          break;
-
-        default:
-        {
-          // All other transport exceptions are logged.
-          // State of server is unknown.  Done.
-          string errStr = string("TServerTransport died: ") + ttx.what();
-          GlobalOutput(errStr.c_str());
-          done = true;
-          break;
-        }
+      if (ttx.getType() == TTransportException::TIMED_OUT) {
+        // Accept timeout - continue processing.
+        continue;
+      } else if (ttx.getType() == TTransportException::END_OF_FILE ||
+                 ttx.getType() == TTransportException::INTERRUPTED) {
+        // Server was interrupted.  This only happens when stopping.
+        break;
+      } else {
+        // All other transport exceptions are logged.
+        // State of connection is unknown.  Done.
+        string errStr = string("TServerTransport died: ") + ttx.what();
+        GlobalOutput(errStr.c_str());
+        break;
       }
     }
   }
