@@ -23,7 +23,7 @@
 #include <boost/shared_ptr.hpp>
 #include <stdint.h>
 #include <thrift/TProcessor.h>
-#include <thrift/concurrency/Semaphore.h>
+#include <thrift/concurrency/Monitor.h>
 #include <thrift/server/TConnectedClient.h>
 #include <thrift/server/TServer.h>
 #include <thrift/transport/TServerTransport.h>
