@@ -167,14 +167,14 @@ private:
   int64_t clients_;
 
   /**
-   * The limit on the number of concurrent clients.
-   */
-  int64_t limit_;
-
-  /**
    * The high water mark of concurrent clients.
    */
   int64_t hwm_;
+
+  /**
+   * The limit on the number of concurrent clients.
+   */
+  int64_t limit_;
 };
 
 }
