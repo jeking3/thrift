@@ -17,10 +17,10 @@
 # under the License.
 #
 
-include_directories(SYSTEM "${Boost_INCLUDE_DIRS}")
+include_directories(${Boost_INCLUDE_DIRS})
 
 #Make sure gen-cpp files can be included
-include_directories("${CMAKE_CURRENT_BINARY_DIR}")
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 # Create the thrift C++ test library
 set(testgencpp_SOURCES
@@ -119,7 +119,7 @@ endif ()
 add_test(NAME TServerIntegrationTest COMMAND TServerIntegrationTest)
 
 if(WITH_ZLIB)
-include_directories(SYSTEM "${ZLIB_INCLUDE_DIRS}")
+include_directories(${ZLIB_INCLUDE_DIRS})
 add_executable(TransportTest TransportTest.cpp)
 target_link_libraries(TransportTest
     testgencpp
