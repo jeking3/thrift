@@ -18,25 +18,10 @@
 # under the License.
 #
 
-# Download prebuilt docker image and compare Dockerfile hash values
+set -e
 
-set -ex
+printenv | sort
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DISTRO=$1
-SRC_IMG=thrift/thrift-build:$DISTRO
+time docker run --net=host -e BUILD_LIBS="$BUILD_LIBS" $BUILD_ENV -v $(pwd):/thrift/src \
+	-it $DOCKER_USER/$DOCKER_REPO:$DISTRO build/docker/scripts/$SCRIPT $BUILD_ARG
 
-function try_pull {
-  docker pull $SRC_IMG
-  cd ${SCRIPT_DIR}/$DISTRO
-  docker run $SRC_IMG bash -c 'cd .. && sha512sum Dockerfile' > .Dockerfile.sha512
-  sha512sum -c .Dockerfile.sha512
-}
-
-if try_pull; then
-  echo Dockerfile seems identical. No need to rebuild from scratch.
-  docker tag thrift/thrift-build:$DISTRO thrift-build:$DISTRO
-else
-  echo Either Dockerfile has changed or pull failure. Need to build brand new one.
-  exit 1
-fi
