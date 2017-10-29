@@ -119,7 +119,7 @@ endif()
 
 add_executable(thrift-compiler ${thrift-compiler_SOURCES})
 
-if(${WITH_PLUGIN})
+if(WITH_PLUGIN)
     add_executable(thrift-bootstrap ${compiler_core}
         src/thrift/main.cc
         src/thrift/audit/t_audit.cpp
