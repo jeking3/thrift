@@ -14,7 +14,6 @@
 
 @ECHO OFF
 SETLOCAL EnableDelayedExpansion
-
 CD build\appveyor              || EXIT /B
 CALL cl_banner_test.bat        || EXIT /B
 CALL cl_setenv.bat             || EXIT /B
