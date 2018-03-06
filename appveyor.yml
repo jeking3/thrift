@@ -26,6 +26,10 @@ shallow_clone: true
 os:
   - Visual Studio 2017
 
+matrix:
+  allow_failures:
+    - PROFILE: CYGWIN
+
 environment:
   matrix:
    - PROFILE: MSVC2017
@@ -44,8 +48,13 @@ environment:
      DISABLED_TESTS: StressTestNonBlocking
 
    - PROFILE: CYGWIN
+     PLATFORM: x64
+     CONFIGURATION: RelWithDebInfo
+     DISABLED_TESTS: (ZlibTest|OpenSSLManualInitTest|TNonblockingServerTest|StressTestNonBlocking)
+
+   - PROFILE: CYGWIN
      PLATFORM: x86
-     CONFIGURATION: Debug
+     CONFIGURATION: RelWithDebInfo
      DISABLED_TESTS: (ZlibTest|OpenSSLManualInitTest|TNonblockingServerTest|StressTestNonBlocking)
 
 matrix:
