@@ -17,15 +17,7 @@
 # under the License.
 #
 
-cmake_minimum_required(VERSION 3.1)
-
-# CMake 3.1 supports C++ standards selection with CMAKE_CXX_STANDARD
-# If you need CMake 3.1+ for Ubuntu 14.04, try
-#   https://launchpad.net/~george-edison55/+archive/ubuntu/cmake-3.x
-# If you need CMake 3.1+ for debian "jessie", get it from jessie-backports
-# Otherwise
-#   http://cmake.org
-
+cmake_minimum_required(VERSION 3.3)
 project("Apache Thrift")
 
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${CMAKE_CURRENT_SOURCE_DIR}/build/cmake")
@@ -61,11 +53,8 @@ include(ConfigureChecks)
 # Package it
 include(CPackConfig)
 
-
-find_package(Threads)
-
-include(CTest)
 if(BUILD_TESTING)
+  include(CTest)
   message(STATUS "Building with unittests")
 
   enable_testing()
