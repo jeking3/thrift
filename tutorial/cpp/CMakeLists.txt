@@ -17,9 +17,7 @@
 # under the License.
 #
 
-include_directories(SYSTEM "${Boost_INCLUDE_DIRS}")
-
-#Make sure gen-cpp files can be included
+# Make sure gen-cpp files can be included
 include_directories("${CMAKE_CURRENT_BINARY_DIR}")
 include_directories("${CMAKE_CURRENT_BINARY_DIR}/gen-cpp")
 include_directories("${PROJECT_SOURCE_DIR}/lib/cpp/src")
@@ -42,14 +40,14 @@ add_custom_command(OUTPUT gen-cpp/Calculator.cpp gen-cpp/SharedService.cpp gen-c
 )
 
 add_executable(TutorialServer CppServer.cpp)
-target_link_libraries(TutorialServer tutorialgencpp)
+target_link_libraries(TutorialServer tutorialgencpp ${Boost_LIBRARIES})
 LINK_AGAINST_THRIFT_LIBRARY(TutorialServer thrift)
 if (ZLIB_FOUND)
   target_link_libraries(TutorialServer ${ZLIB_LIBRARIES})
 endif ()
 
 add_executable(TutorialClient CppClient.cpp)
-target_link_libraries(TutorialClient tutorialgencpp)
+target_link_libraries(TutorialClient tutorialgencpp ${Boost_LIBRARIES})
 LINK_AGAINST_THRIFT_LIBRARY(TutorialClient thrift)
 if (ZLIB_FOUND)
   target_link_libraries(TutorialClient ${ZLIB_LIBRARIES})

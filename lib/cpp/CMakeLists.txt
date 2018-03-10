@@ -103,15 +103,15 @@ if(OPENSSL_FOUND AND WITH_OPENSSL)
     list(APPEND SYSLIBS "${OPENSSL_LIBRARIES}")
 endif()
 
-# WITH_*THREADS selects which threading library to use
-if(WITH_BOOSTTHREADS)
+# WITH_*_THREAD selects which threading library to use
+if(WITH_BOOST_THREAD)
     set( thriftcpp_threads_SOURCES
         src/thrift/concurrency/BoostThreadFactory.cpp
         src/thrift/concurrency/BoostMonitor.cpp
         src/thrift/concurrency/BoostMutex.cpp
     )
     list(APPEND SYSLIBS "${Boost_LIBRARIES}")
-elseif(UNIX AND NOT WITH_STDTHREADS)
+elseif(UNIX AND NOT WITH_STD_THREAD)
     if(ANDROID)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
     else()
