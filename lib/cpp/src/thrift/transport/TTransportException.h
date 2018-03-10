@@ -20,7 +20,11 @@
 #ifndef _THRIFT_TRANSPORT_TTRANSPORTEXCEPTION_H_
 #define _THRIFT_TRANSPORT_TTRANSPORTEXCEPTION_H_ 1
 
+#if (!defined(_MSC_VER) && __cplusplus < 201103L) || (defined(_MSC_VER) && _MSC_VER < 1800) || defined(FORCE_BOOST_NUMERIC_CAST)
 #include <boost/numeric/conversion/cast.hpp>
+#else
+#include <limits>
+#endif
 #include <string>
 #include <thrift/Thrift.h>
 
@@ -90,13 +94,21 @@ protected:
  * that need to be enforced.
  */
 template <typename To, typename From> To safe_numeric_cast(From i) {
-  try {
+#if (!defined(_MSC_VER) && __cplusplus < 201103L) || (defined(_MSC_VER) && _MSC_VER < 1800) || defined(FORCE_BOOST_NUMERIC_CAST)
+    try {
     return boost::numeric_cast<To>(i);
   }
   catch (const std::bad_cast& bc) {
     throw TTransportException(TTransportException::CORRUPTED_DATA,
                               bc.what());
   }
+#else
+  if ((std::numeric_limits<From>::is_signed
+         && i < static_cast<From>(std::numeric_limits<To>::lowest()))
+      || (i > static_cast<From>(std::numeric_limits<To>::max())))
+    throw TTransportException(TTransportException::CORRUPTED_DATA, "out of range");
+  return static_cast<To>(i);
+#endif
 }
 
 }
