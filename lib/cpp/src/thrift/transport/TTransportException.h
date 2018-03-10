@@ -20,7 +20,7 @@
 #ifndef _THRIFT_TRANSPORT_TTRANSPORTEXCEPTION_H_
 #define _THRIFT_TRANSPORT_TTRANSPORTEXCEPTION_H_ 1
 
-#if __cplusplus < 201103L
+#if (!defined(_MSC_VER) && __cplusplus < 201103L) || (defined(_MSC_VER) && _MSC_VER < 1800) || defined(FORCE_BOOST_NUMERIC_CAST)
 #include <boost/numeric/conversion/cast.hpp>
 #else
 #include <limits>
@@ -94,8 +94,8 @@ protected:
  * that need to be enforced.
  */
 template <typename To, typename From> To safe_numeric_cast(From i) {
-#if __cplusplus < 201103L
-  try {
+#if (!defined(_MSC_VER) && __cplusplus < 201103L) || (defined(_MSC_VER) && _MSC_VER < 1800) || defined(FORCE_BOOST_NUMERIC_CAST)
+    try {
     return boost::numeric_cast<To>(i);
   }
   catch (const std::bad_cast& bc) {

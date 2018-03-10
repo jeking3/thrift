@@ -129,7 +129,7 @@ CMAKE_DEPENDENT_OPTION(BUILD_C_GLIB "Build C (GLib) library" ON
 
 if(BUILD_CPP)
     if(BUILD_TESTING)
-        list(APPEND REQUIRED_BOOST_COMPONENTS chrono filesystem program_options unit_test_framework)
+        list(APPEND REQUIRED_BOOST_COMPONENTS chrono date_time filesystem program_options thread unit_test_framework)
     endif()
     if(REQUIRED_BOOST_COMPONENTS)
         message(STATUS "Required Boost Components: ${REQUIRED_BOOST_COMPONENTS}")
