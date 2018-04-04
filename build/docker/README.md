@@ -112,55 +112,56 @@ Open a command prompt in the image:
 
 ## Core Tool Versions per Dockerfile ##
 
-Last updated: October 1, 2017
+Last updated: April 10, 2018
 
-| Tool      | ubuntu-xenial | ubuntu-artful | Notes |
+| Tool      | ubuntu-xenial | ubuntu-bionic | Notes |
 | :-------- | :------------ | :------------ | :---- |
-| ant       | 1.9.6         | 1.9.9         |       |
+| ant       | 1.9.6         | 1.10.3        |       |
 | autoconf  | 2.69          | 2.69          |       |
-| automake  | 1.15          | 1.15          |       |
+| automake  | 1.15          | 1.15.1        |       |
 | bison     | 3.0.4         | 3.0.4         |       |
-| boost     | 1.58.0        | 1.63.0        | artful: stock boost 1.62.0 has problems running unit tests |
-| cmake     | 3.5.1         | 3.9.1         |       |
-| cppcheck  | 1.72          | 1.80          |       |
-| flex      | 2.6.0         | 2.6.1         |       |
-| glibc     | 2.23          | 2.26          |       |
-| libevent  | 2.0.21        | 2.1           |       |
-| libstdc++ | 5.4.0         | 7.2.0         |       |
+| boost     | 1.58.0        | 1.65.1        |       |
+| cmake     | 3.5.1         | 3.10.2        |       |
+| cppcheck  | 1.72          | 1.82          |       |
+| flex      | 2.6.0         | 2.6.4         |       |
+| glibc     | 2.23          | 2.27          |       |
+| libevent  | 2.0.21        | 2.1.8         |       |
+| libstdc++ | 5.4.0         | 7.3.0         |       |
 | make      | 4.1           | 4.1           |       |
-| openssl   | 1.0.2g        | 1.0.2g        |       |
-| qt5       | 5.5.1         | 5.9.1         |       |
+| openssl   | 1.0.2g        | 1.1.0g        |       |
+| qt5       | 5.5.1         | 5.9.4         |       |
 
 ## Compiler/Language Versions per Dockerfile ##
 
-| Language  | ubuntu-xenial | ubuntu-artful | Notes |
+| Language  | ubuntu-xenial | ubuntu-bionic | Notes |
 | :-------- | :------------ | :------------ | :---- |
-| as of     | Mar 06, 2018  | Mar 19, 2018  |       |
+| as of     | Mar 06, 2018  | Apr 10, 2018  |       |
 | as3       |               |               | Not in CI |
-| C++ gcc   | 5.4.0         | 7.2.0         |       |
-| C++ clang | 3.8           | 4.0           |       |
+| C++ gcc   | 5.4.0         | 7.3.0         |       |
+| C++ clang | 3.8           | 6.0           |       |
 | C# (mono) | 4.2.1.0       | 4.6.2.7       |       |
-| c_glib    | 2.48.2        | 2.54.0        |       |
-| cl (sbcl) |               | 1.4.5         |       |
+| c_glib    | 2.48.2        | 2.56.0        |       |
+| cl (sbcl) |               | 1.4.6         |       |
 | cocoa     |               |               | Not in CI |
-| d         | 2.073.2       | 2.077.1       |       |
+| d         | 2.073.2       | 2.078.3       |       |
 | dart      | 1.22.1        | 1.24.3        |       |
 | delphi    |               |               | Not in CI |
-| dotnet    | 2.1.4         | 2.1.4         | v2.1.4 SDK uses v2.0.5 Runtime |
-| erlang    | 18.3          | 20.0.4        |       |
-| go        | 1.7.6         | 1.10          |       |
+| dotnet    | 2.1.4         |               | No support for bionic yet |
+| erlang    | 18.3          | 20.2.2        |       |
+| go        | 1.7.6         | 1.10.1        |       |
 | haskell   | 7.10.3        | 8.0.2         |       |
 | haxe      | 3.2.1         | 3.4.4         | THRIFT-4352: avoid 3.4.2 |
-| java      | 1.8.0_151     | 1.8.0_151     |       |
+| java      | 1.8.0_151     | 9.0.4         |       |
 | js        |               |               | Unsure how to look for version info? |
 | lua       | 5.2.4         | 5.2.4         | Lua 5.3: see THRIFT-4386 |
-| nodejs    | 6.13.0        | 8.9.4         |       |
-| ocaml     |               | 4.04.0        | THRIFT-4517: ocaml 4.02.3 on xenial appears broken |
-| perl      | 5.22.1        | 5.26.0        |       |
-| php       | 7.0.22        | 7.1.11        |       |
+| nodejs    | 6.13.0        | 8.11.1        |       |
+| ocaml     |               | 4.05.0        | THRIFT-4517: ocaml on xenial is broken |
+| perl      | 5.22.1        | 5.26.1        |       |
+| php       | 7.0.22        | 7.2.3         |       |
 | python    | 2.7.12        | 2.7.14        |       |
-| python3   | 3.5.2         | 3.6.3         |       |
-| ruby      | 2.3.1p112     | 2.3.3p222     |       |
-| rust      | 1.17.0        | 1.21.0        |       |
+| python3   | 3.5.2         | 3.6.5         |       |
+| ruby      | 2.3.1p112     | 2.5.1p 57     |       |
+| rust      | 1.17.0        | 1.24.1        |       |
 | smalltalk |               |               | Not in CI |
 | swift     |               |               | Not in CI |
+
