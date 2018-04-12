@@ -16,11 +16,11 @@
  specific language governing permissions and limitations
  under the License.
 -->
-<project name="Java Script Test" default="test" basedir="."
+<project name="JavaScript Test" default="test" basedir="."
   xmlns:artifact="antlib:org.apache.maven.artifact.ant"
   xmlns:jsl="antlib:com.googlecode.jslint4java">
 
-  <description>Java Script Test based on Thrift Java Library</description>
+  <description>JavaScript Test based on Thrift Java Library</description>
 
   <property name="src" location="src" />
   <property name="genjava" location="gen-java" />
@@ -73,7 +73,7 @@
       </condition>
       You need libthrift*.jar and libthrift*test.jar located at
       ${thrift.java.dir}/build/libs
-      Did you compile Thrift Java library and its test suite by "ant compile-test"?
+      Did you compile Thrift Java library and its test suite?
     </fail>
     <fail>
       <condition>

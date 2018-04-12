@@ -183,7 +183,8 @@ RUN apt-get install -y --no-install-recommends \
       ant \
       ant-optional \
       openjdk-8-jdk \
-      maven
+      maven && \
+    apt-get remove -y default-jre-headless openjdk-9-jre-headless
 
 RUN apt-get install -y --no-install-recommends \
 `# Lua dependencies` \
