@@ -1,0 +1,72 @@
+#
+# Apache Thrift Docker Compose for development and CI
+#
+# Features:
+#
+# * Creates a private bridge network called thrift
+# * Spins up a RabbitMQ docker container
+# * [TODO] Spins up a Zookeeper docker container (for Kafka)
+# * [TODO] Spins up an Apache Kafka docker container
+# * Spins up an Apache Thrift development docker container
+#    with an interactive shell.
+#
+# All of the containers share a private network called thrift.
+# You need to create it with:
+#   docker network create thrift
+#
+
+version: '3.5'
+
+networks:
+  thrift:
+    driver: bridge
+    name: thrift
+
+services:
+  thrift:
+    build: .
+    cap_add:
+      - SYS_PTRACE
+    depends_on:
+#     - kafka
+      - rabbitmq
+    domainname: thrift.dev
+    hostname: build
+    networks:
+      - thrift
+    privileged: true
+    stdin_open: true
+    tty: true
+
+  rabbitmq:
+    image: rabbitmq:latest
+    domainname: thrift.dev
+    hostname: rabbitmq
+    networks:
+      - thrift
+
+  zookeeper:
+    image: dockerkafka/zookeeper
+    domainname: thrift.dev
+    hostname: zookeeper
+    networks:
+      - thrift
+
+  kafka:
+    image: dockerkafka/kafka
+    depends_on:
+      - zookeeper
+    domainname: thrift.dev
+    hostname: kafka
+    networks:
+      - thrift
+    links:
+      - zookeeper:zookeeper
+
+  zookeeper:
+    image: dockerkafka/zookeeper
+    domainname: thrift.dev
+    hostname: zookeeper
+    networks:
+      - thrift
+

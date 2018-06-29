@@ -13,12 +13,12 @@
 #
 # Apache Thrift Docker build environment for Ubuntu Bionic
 # Using all stock Ubuntu Bionic packaging except for:
+# - cl: want 1.4.8 or later, bionic comes with 1.4.5
 # - d: dmd does not come with Ubuntu
 # - dart: does not come with Ubuntu
 # - dotnet: does not come with Ubuntu
 # - go: want latest
 # - nodejs: want v8, bionic comes with v6
-# - openssl: to support dlang and the deimos for openssl, need to use 1.0 not 1.1
 #
 
 FROM buildpack-deps:bionic-scm
@@ -66,20 +66,23 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       clang \
       cmake \
       debhelper \
+      dnsutils \
       flex \
       gdb \
+      iputils-ping \
       llvm \
+      net-tools \
       ninja-build \
       pkg-config \
       valgrind \
       vim
 ENV PATH /usr/lib/llvm-6.0/bin:$PATH
 
-# boost-1.62 has a terrible bug in boost::test, see https://svn.boost.org/trac10/ticket/12507
 RUN apt-get install -y --no-install-recommends \
 `# C++ dependencies` \
       libboost-all-dev \
       libevent-dev \
+      librabbitmq-dev \
       libssl-dev \
       qt5-default \
       qtbase5-dev \

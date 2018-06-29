@@ -96,6 +96,8 @@ check_PROGRAMS = \
 	SpecializationTest \
 	AllProtocolsTest \
 	TransportTest \
+        TRabbitMQSessionOptionsTest \
+        TRabbitMQSessionTest \
 	TInterruptTest \
 	TServerIntegrationTest \
 	SecurityTest \
@@ -188,6 +190,22 @@ TransportTest_LDADD = \
   $(top_builddir)/lib/cpp/libthriftz.la \
   $(BOOST_TEST_LDADD) \
   -lz
+
+# @@@ make conditional...
+TRabbitMQSessionOptionsTest_SOURCES = \
+	TRabbitMQSessionOptionsTest.cpp
+
+TRabbitMQSessionOptionsTest_LDADD = \
+  libtestgencpp.la \
+  $(BOOST_TEST_LDADD)
+
+# @@@ make conditional...
+TRabbitMQSessionTest_SOURCES = \
+	TRabbitMQSessionTest.cpp
+
+TRabbitMQSessionTest_LDADD = \
+  libtestgencpp.la \
+  $(BOOST_TEST_LDADD)
 
 ZlibTest_SOURCES = \
 	ZlibTest.cpp

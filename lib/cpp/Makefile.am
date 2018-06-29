@@ -40,7 +40,8 @@ pkgconfigdir = $(libdir)/pkgconfig
 lib_LTLIBRARIES = libthrift.la
 pkgconfig_DATA = thrift.pc
 libthrift_la_LDFLAGS = -release $(VERSION)
-libthrift_la_LIBADD = $(BOOST_LDFLAGS) $(OPENSSL_LDFLAGS) $(OPENSSL_LIBS)
+libthrift_la_LIBADD = $(BOOST_LDFLAGS) $(OPENSSL_LDFLAGS) $(OPENSSL_LIBS) -lrabbitmq
+## @@@ make rabbitmq optional and a separate link library
 
 ## We only build the extra libraries if we have the dependencies,
 ## but we install all of the headers unconditionally.
@@ -99,6 +100,8 @@ libthrift_la_SOURCES = src/thrift/TApplicationException.cpp \
                        src/thrift/transport/TNonblockingSSLServerSocket.cpp \
                        src/thrift/transport/TTransportUtils.cpp \
                        src/thrift/transport/TBufferTransports.cpp \
+                       src/thrift/transport/TRabbitMQSession.cpp \
+                       src/thrift/transport/TRabbitMQSessionOptions.cpp \
                        src/thrift/server/TConnectedClient.cpp \
                        src/thrift/server/TServer.cpp \
                        src/thrift/server/TServerFramework.cpp \

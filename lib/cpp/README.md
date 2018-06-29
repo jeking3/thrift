@@ -272,6 +272,25 @@ OpenSSL's RAND_poll() when OpenSSL library is first initialized.
 The PRNG seed is key to the application security. This method should be
 overridden if it's not strong enough for you.
 
+## RabbitMQ Support Restrictions
+
+The current implementation of RabbitMQ transport has significant restrictions
+since it is a prototype implementation.  Until now all thrift transports have
+been peer to peer.  With the introduction of a message bus transport it is
+possible to have N:1 or N:N connectivity over the same transport.  To route
+RPC replies to the correct location each request must come with a "reply-to"
+that indicates the reply queue to send the RPC reply to.
+
+The thrift transport layer has no way to carry this through the request and
+back to the response, therefore the following restrictions are in place until
+this is resolved:
+
+- Only use a "simple" server (one thread).  There can only be one request
+  outstanding at a time because the transport has to keep track of the reply-to
+  address for the current request.
+- Do not use "oneway" calls.  This will confuse the prototype implementation
+  and you will get an exception on the next request.
+
 # Breaking Changes
 
 ## 0.11.0

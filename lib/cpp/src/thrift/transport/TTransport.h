@@ -125,13 +125,44 @@ public:
   }
 
   /**
-   * Called when read is completed.
-   * This can be over-ridden to perform a transport-specific action
-   * e.g. logging the request to a file
+   * On the server side, oneway requests need to be identified
+   * at the transport layer so that transports (like HTTP) that
+   * require a response can be responded to at a transport layer
+   * after reading in a request.
    *
+   * Additionally, on the server side, roundtrip requests need
+   * a unique discriminator that identifies the request in order
+   * to allow the transport to handle message-based routing
+   * for transports that are not strictly point-to-point, such
+   * as a message bus.
+   *
+   * On the client side, the polarity is reversed - when a request
+   * is written the unique discriminator is kept through to the
+   * reply read.
+   */
+  typedef struct _Context {
+    // A unique message identifier - this is unique across all
+    // requests for all clients.
+    std::string discriminator;
+
+    // Indicator if this is a request or a reply
+    // On the client this will be true on write, false on read
+    // On the server this will be false on write, true on read
+    bool request;
+
+    // Indicator if the request is oneway
+    bool oneway;
+  } Context;
+
+  /**
+   * Called when a complete message is read.
+   * This allows message-based transports to understand the end
+   * of a complete message read.
+   *
+   * @param[in]  ctx  the context of the read
    * @return number of bytes read if available, 0 otherwise.
    */
-  virtual uint32_t readEnd() {
+  virtual uint32_t readEnd(const Context& context) {
     // default behaviour is to do nothing
     return 0;
   }
@@ -157,13 +188,14 @@ public:
   }
 
   /**
-   * Called when write is completed.
-   * This can be over-ridden to perform a transport-specific action
-   * at the end of a request.
+   * Called when a complete message is written.
+   * This allows message-based transports to understand the end
+   * of a complete message read.
    *
+   * @param[in]  ctx  the context of the read
    * @return number of bytes written if available, 0 otherwise
    */
-  virtual uint32_t writeEnd() {
+  virtual uint32_t writeEnd(const Context& context) {
     // default behaviour is to do nothing
     return 0;
   }

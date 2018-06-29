@@ -315,7 +315,8 @@ public:
       wBufSize_(DEFAULT_BUFFER_SIZE),
       rBuf_(),
       wBuf_(new uint8_t[wBufSize_]),
-      bufReclaimThresh_((std::numeric_limits<uint32_t>::max)()) {
+      bufReclaimThresh_((std::numeric_limits<uint32_t>::max)()),
+      maxFrameSize_(DEFAULT_MAX_FRAME_SIZE) {
     initPointers();
   }
 
