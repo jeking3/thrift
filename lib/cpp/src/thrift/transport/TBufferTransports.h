@@ -361,9 +361,7 @@ public:
 
   virtual void flush();
 
-  uint32_t readEnd();
-
-  uint32_t writeEnd();
+  stdcxx::shared_ptr<ReqRsp> readEnd(bool oneway);
 
   const uint8_t* borrowSlow(uint8_t* buf, uint32_t* len);
 
@@ -633,22 +631,6 @@ public:
   }
 
   uint32_t readAppendToString(std::string& str, uint32_t len);
-
-  // return number of bytes read
-  uint32_t readEnd() {
-    // This cast should be safe, because buffer_'s size is a uint32_t
-    uint32_t bytes = static_cast<uint32_t>(rBase_ - buffer_);
-    if (rBase_ == wBase_) {
-      resetBuffer();
-    }
-    return bytes;
-  }
-
-  // Return number of bytes written
-  uint32_t writeEnd() {
-    // This cast should be safe, because buffer_'s size is a uint32_t
-    return static_cast<uint32_t>(wBase_ - buffer_);
-  }
 
   uint32_t available_read() const {
     // Remember, wBase_ is the real rBound_.

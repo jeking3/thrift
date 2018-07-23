@@ -71,13 +71,22 @@ uint32_t THttpTransport::read(uint8_t* buf, uint32_t len) {
   return readBuffer_.read(buf, len);
 }
 
-uint32_t THttpTransport::readEnd() {
+uint32_t THttpTransport::readEnd(const Context& ctx) {
   // Read any pending chunked data (footers etc.)
   if (chunked_) {
     while (!chunkedDone_) {
       readChunked();
     }
   }
+
+  if (ctx.request && ctx.oneway) {
+    // @@@ TODO: THRIFT-3877
+    //           If the message is a oneway request,
+    //           the transport still has to issue
+    //           a 200 OK response to satisfy HTTP.
+    ;
+  }
+
   return 0;
 }
 

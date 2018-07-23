@@ -79,17 +79,30 @@ class TRabbitMQSession
     virtual void open() /* override */;
     virtual void close() /* override */;
 
+    virtual stdcxx::shared_ptr<ReqRsp> trackReqRsp() /* override */;
+
     virtual uint32_t read_virt(uint8_t* /* buf */, uint32_t /* len */) /* override */;
-    virtual uint32_t readEnd() /* override */;
+    virtual stdcxx::shared_ptr<ReqRsp> readEnd(bool oneway_rq) /* override */;
 
     virtual void write_virt(const uint8_t* /* buf */, uint32_t /* len */) /* override */;
-    virtual uint32_t writeEnd() /* override */;
-
-    virtual void flush() /* override */;
+    virtual void writeEnd(const stdcxx::shared_ptr<ReqRsp>&, bool oneway_rq) /* override */;
 
     virtual const std::string getOrigin() /* override */;
 
     const TRabbitMQSessionOptions& getOptions() const;
+
+  private: // type definitions
+    // It is necessary to store both the AMQP delivery tag
+    // for acknowledgements, and the AMQP reply-to address
+    // for each individual request.
+    typedef struct _CallInfo : public ReqRsp
+    {
+        _CallInfo() : delivery_tag(0), len(0) { }
+        void clear() { delivery_tag = 0; len = 0; reply_to.clear(); }
+        uint64_t delivery_tag;
+        uint32_t len;
+        std::string reply_to;
+    } CallInfo;
 
   private: // methods
     /**
@@ -155,43 +168,35 @@ class TRabbitMQSession
     uint32_t give_buf(uint8_t *buf, uint32_t buflen);
 
     /**
-     * \brief Acknowledge the last message as received if we haven't replied
+     * \brief Acknowledge receipt of the inbound message
+     * \param[in]  info      the call to ack
      */
-    void ack_if();
+    void ack();
 
     /** 
-     * \brief Reject the last message received if we haven't replied
+     * \brief Indicate non-receipt
+     * \param[in]  info      the call to nack
      */
-    void nack_if();
+    void nack();
 
   private: // members
     // Session options
     TRabbitMQSessionOptions m_opts;
 
-    // Is this a consumer?
+    // Is this a consumer (server)?
     bool m_consumer;
 
     // Connection
     stdcxx::shared_ptr<amqp_connection_state_t_> m_conn;
     
-    //! Current message "reply-to" value
-    //! \note this is purely for prototyping
-    //!       it means the consume (server) can only process one message at a time
-    //!       this is because transports have always been stream based, which means
-    //!       there's always only one entity on the other end.  With message bus,
-    //!       thrift needs to change so a hint can be passed up, carried around
-    //!       with the request, and handed back down on the reply.  This is a major
-    //!       change.
-    std::string m_reply_to;
-
-    // The delivery tag to acknowledge before replying
-    uint64_t m_delivery_tag;
-
-    // The current message buffer for reading
+    // The current message buffer for reading a message
     std::vector<char> m_rbuf;
 
     // The current message buffer position for reading
     std::vector<char>::size_type m_rpos;
+
+    // The current inbound message's call info
+    CallInfo m_inbound;
 
     // The current message buffer for writing
     std::vector<char> m_wbuf;

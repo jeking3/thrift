@@ -17,7 +17,9 @@
  * under the License.
  */
 
+#include <algorithm>
 #include <amqp_tcp_socket.h>
+#include <boost/bind.hpp>
 #include <sstream>
 #include <string.h>
 #include <thrift/transport/TRabbitMQSession.h>
@@ -27,7 +29,7 @@ namespace thrift {
 namespace transport {
 
 TRabbitMQSession::TRabbitMQSession(const TRabbitMQSessionOptions& opts)
-  : m_opts(opts), m_consumer(false), m_delivery_tag(0), m_rpos(0)
+  : m_opts(opts), m_consumer(false), m_rpos(0)
 {
 }
 
@@ -187,14 +189,15 @@ void TRabbitMQSession::close()
     // idempotent
     if (m_conn)
     {
-        nack_if();
+        // nack anything we haven't replied to yet
+        if (m_inbound.delivery_tag)
+            nack();
+        m_inbound.clear();
 
         (void)amqp_channel_close(m_conn.get(), m_opts.conn.channel, AMQP_REPLY_SUCCESS);
         (void)amqp_connection_close(m_conn.get(), AMQP_REPLY_SUCCESS);
         m_conn.reset();
 
-        m_reply_to.clear();
-        m_delivery_tag = 0;
         m_rbuf.clear();
         m_rpos = 0;
         m_wbuf.clear();
@@ -203,11 +206,6 @@ void TRabbitMQSession::close()
 
 uint32_t TRabbitMQSession::read_virt(uint8_t* buf, uint32_t len)
 {
-    if (!m_conn)
-    {
-        throw TTransportException(TTransportException::NOT_OPEN, "not connected");
-    }
-
     // message reads may come in as (4 bytes), (remaining bytes)
     // the first will buffer the entire message and return 4 bytes
     // subsequent reads need to send back as much as they can until
@@ -215,15 +213,6 @@ uint32_t TRabbitMQSession::read_virt(uint8_t* buf, uint32_t len)
     if (!m_rbuf.empty())
     {
         return give_buf(buf, len);
-    }
-
-    // @@@ prototype implementation restrictions: we don't have a way to pass
-    //     the reply-to back up and have it passed back down as part of a reply
-    //     so for now this class only supports one outstanding request, sorry
-    if (m_consumer && !m_reply_to.empty())
-    {
-        throw TTransportException(TTransportException::INTERNAL_ERROR,
-            "attempt to read while processing a message - did you use a threaded server or oneway call?");
     }
 
     // We consume messages, discarding irrelevant things like acks, until we get something useful
@@ -257,12 +246,15 @@ uint32_t TRabbitMQSession::read_virt(uint8_t* buf, uint32_t len)
         // Otherwise we are going to acknowledge it right away since it is a oneway request.
         if (env.message.properties._flags & AMQP_BASIC_REPLY_TO_FLAG)
         {
-            m_reply_to.assign(static_cast<char *>(env.message.properties.reply_to.bytes),
-                                                  env.message.properties.reply_to.len);
+            m_inbound.reply_to.assign(static_cast<char *>(env.message.properties.reply_to.bytes),
+                                                           env.message.properties.reply_to.len);
         }
 
         // save the delivery tag so we can acknowledge it appropriately
-        m_delivery_tag = env.delivery_tag;
+        m_inbound.delivery_tag = env.delivery_tag;
+
+        // save the message length 
+        m_inbound.len = env.message.body.len;
 
         m_rbuf.resize(env.message.body.len);
         memcpy(&m_rbuf[0], env.message.body.bytes, env.message.body.len);
@@ -292,87 +284,85 @@ uint32_t TRabbitMQSession::give_buf(uint8_t *buf, uint32_t buflen)
     return len;
 }
 
-uint32_t TRabbitMQSession::readEnd()
+stdcxx::shared_ptr<ReqRsp> TRabbitMQSession::readEnd(bool oneway_rq)
 {
-    if (m_reply_to.empty())
+    if (!m_rbuf.empty())
     {
-        // this is not a request that will generate a response, so acknowledge it on read
-        ack_if();
+        throw TTransportException(TTransportException::INTERNAL_ERROR,
+            "read complete thrift message but there is still data in the inbound message buffer");
     }
 
-    // @@@ TODO: here is where we will move the reply-to into a hint and return
-    //           it to the caller; eventually it can be passed back down to us
-    //           in the response (writeEnd) so we know where to send the reply
+    stdcxx::shared_ptr<ReqRsp> result =
+        stdcxx::dynamic_pointer_cast<ReqRsp>(stdcxx::shared_ptr<CallInfo>(new CallInfo(m_inbound)));
 
-    return 0;
+    // acknowledge receipt in all cases except for server-side receipt of a request
+    // those are acknowledged later on, right before we send out the reply, so that
+    // if the server crashes while processing the message can be redelivered
+    if (!m_consumer || oneway_rq)
+    {
+        ack();
+    }
+    else if (m_inbound.reply_to.empty())
+    {
+        throw TTransportException(TTransportException::INTERNAL_ERROR,
+            "roundtrip request arrived without a reply-to address");
+    }
+
+    m_inbound.clear();
+    return result;
 }
 
-void TRabbitMQSession::ack_if()
+void TRabbitMQSession::ack()
 {
-    if (m_delivery_tag)
-    {
-        checkResult(
-           "amqp_basic_ack",
-            amqp_basic_ack(
-                m_conn.get(),
-                m_opts.conn.channel,
-                m_delivery_tag,
-                false),
-            TTransportException::INTERNAL_ERROR);
-        
-        m_delivery_tag = 0;
-    }
+    checkResult(
+       "amqp_basic_ack",
+        amqp_basic_ack(
+            m_conn.get(),
+            m_opts.conn.channel,
+            m_inbound.delivery_tag,
+            false),
+        TTransportException::INTERNAL_ERROR);
 }
 
-void TRabbitMQSession::nack_if()
+void TRabbitMQSession::nack()
 {
-    if (m_delivery_tag)
-    {
-        checkResult(
-           "amqp_basic_nack",
-            amqp_basic_nack(
-                m_conn.get(),
-                m_opts.conn.channel,
-                m_delivery_tag,
-                false,
-                true),
-            TTransportException::INTERNAL_ERROR);
-
-        m_delivery_tag = 0;
-    }
+    checkResult(
+       "amqp_basic_nack",
+        amqp_basic_nack(
+            m_conn.get(),
+            m_opts.conn.channel,
+            m_inbound.delivery_tag,
+            false,
+            true),
+        TTransportException::INTERNAL_ERROR);
 }
 
 void TRabbitMQSession::write_virt(const uint8_t* buf, uint32_t len)
 {
     std::vector<char>::size_type olen = m_wbuf.size();
-    m_wbuf.resize(olen + len);
-    memcpy(&m_wbuf[olen], buf, len);
-}
-
-uint32_t TRabbitMQSession::writeEnd()
-{
-    if (m_wbuf.size() > std::numeric_limits<uint32_t>::max())
+    if (olen + len > std::numeric_limits<uint32_t>::max())
     {
         throw TTransportException(TTransportException::INTERNAL_ERROR, "data size exceeded internal limits");
     }
 
-    return static_cast<uint32_t>(m_wbuf.size());
+    m_wbuf.resize(olen + len);
+    memcpy(&m_wbuf[olen], buf, len);
 }
 
-void TRabbitMQSession::flush()
+void TRabbitMQSession::writeEnd(const stdcxx::shared_ptr<ReqRsp>& rr, bool oneway_rq)
 {
-    if (!m_conn)
-    {
-        throw TTransportException(TTransportException::NOT_OPEN, "not connected");
-    }
+    stdcxx::shared_ptr<CallInfo> info = stdcxx::dynamic_pointer_cast<CallInfo>(rr);
 
     amqp_basic_properties_t props;
     memset(&props, 0, sizeof(amqp_basic_properties_t));
     std::string contentType("application/thrift");
     props._flags |= AMQP_BASIC_CONTENT_TYPE_FLAG;
     props.content_type = amqp_cstring_bytes(contentType.c_str());
-    if (!m_consumer)
+
+    if (!m_consumer && !oneway_rq)
     {
+        // On the producer (client) add an AMQP to every roundtrip request
+        // so the server can properly route the reply back to our reply queue.
         props._flags |= AMQP_BASIC_REPLY_TO_FLAG;
         props.reply_to = amqp_cstring_bytes(m_opts.queue.name.c_str());
     }
@@ -388,10 +378,10 @@ void TRabbitMQSession::flush()
             m_opts.conn.channel,
             // consumer always uses default exchange to publish rpc reply to producer:
             m_opts.exch.name.empty() ? amqp_empty_bytes : amqp_cstring_bytes(m_opts.exch.name.c_str()),
-            // if this is a reply, send to the producer-specified private reply queue
-            // otherwise this is a publisher to send it to the consumer's request queue:
-            !(m_reply_to.empty()) ? amqp_cstring_bytes(m_reply_to.c_str()) : amqp_cstring_bytes(m_opts.rpc.sqn.c_str()),
-            // mandatory: true means if it can't be delivered into a queue, oh well:
+            // on the producer (client) always send to the sqn
+            // on the consumer (server) always send to the reply-to address from the request
+            (m_consumer) ? amqp_cstring_bytes(info->reply_to.c_str()) : amqp_cstring_bytes(m_opts.rpc.sqn.c_str()),
+            // mandatory: false means if it can't be delivered into a queue, oh well:
             false, 
             // immediate: false means if it can't be delivered immediately, oh well:
             false, 

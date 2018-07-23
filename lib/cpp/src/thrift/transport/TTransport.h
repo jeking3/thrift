@@ -51,7 +51,7 @@ uint32_t readAll(Transport_& trans, uint8_t* buf, uint32_t len) {
 /**
  * Generic interface for a method of transporting data. A TTransport may be
  * capable of either reading or writing, but not necessarily both.
- *
+ * Only one thread will access the transport at a time.
  */
 class TTransport {
 public:
@@ -125,46 +125,39 @@ public:
   }
 
   /**
-   * On the server side, oneway requests need to be identified
-   * at the transport layer so that transports (like HTTP) that
-   * require a response can be responded to at a transport layer
-   * after reading in a request.
-   *
-   * Additionally, on the server side, roundtrip requests need
-   * a unique discriminator that identifies the request in order
-   * to allow the transport to handle message-based routing
-   * for transports that are not strictly point-to-point, such
-   * as a message bus.
-   *
-   * On the client side, the polarity is reversed - when a request
-   * is written the unique discriminator is kept through to the
-   * reply read.
+   * @brief A request-response routing object base class.
    */
-  typedef struct _Context {
-    // A unique message identifier - this is unique across all
-    // requests for all clients.
-    std::string discriminator;
-
-    // Indicator if this is a request or a reply
-    // On the client this will be true on write, false on read
-    // On the server this will be false on write, true on read
-    bool request;
-
-    // Indicator if the request is oneway
-    bool oneway;
-  } Context;
+  struct ReqRsp {}
 
   /**
-   * Called when a complete message is read.
-   * This allows message-based transports to understand the end
-   * of a complete message read.
+   * @brief Called when a complete message is read.
+   * 
+   * This allows transports to understand when a complete
+   * thrift message has been read, and whether the message
+   * is a oneway request.
    *
-   * @param[in]  ctx  the context of the read
-   * @return number of bytes read if available, 0 otherwise.
+   * Some server-side transports need to know if there will
+   * not be a corresponding writeEnd to the incoming request
+   * so that they can perform a transport acknowledgement.
+   * Good examples are HTTP must respond with a "200 OK" and
+   * some message busses need to ack receipt.
+   *
+   * @param[in]  oneway_rq  if true, the IDL specifies the
+   *                        request as oneway.  This will only
+   *                        ever be true on the server side.
+   *
+   * @return  an optional request/response tracking object.
+   *          If the read is for a request, this object will
+   *          be delivered to the writeEnd of the reply,
+   *          allowing the transport for multiplexed services
+   *          like message busses to tuck away enough information
+   *          about the request to route the reply.  On the
+   *          client the return value is ignored.
    */
-  virtual uint32_t readEnd(const Context& context) {
+  virtual stdcxx::shared_ptr<ReqRsp> readEnd(bool oneway_rq) {
     // default behaviour is to do nothing
-    return 0;
+    boost::ignore_unused(oneway_rq);
+    return stdcxx::shared_ptr<ReqRsp>();
   }
 
   /**
@@ -188,16 +181,23 @@ public:
   }
 
   /**
-   * Called when a complete message is written.
-   * This allows message-based transports to understand the end
-   * of a complete message read.
+   * @brief Called when a complete message is written.
    *
-   * @param[in]  ctx  the context of the read
-   * @return number of bytes written if available, 0 otherwise
+   * This allows message-based transports to understand
+   * the end of a complete message write.  On the server
+   * end if this is a reply to a request, rr will be the
+   * same object returned by readEnd().
+   *
+   * @param[in]  rr  the optional request/response tracker
+   * @param[in]  oneway_rq  if true, the IDL specifies the
+   *                        request as oneway.  This will only
+   *                        ever be true on the client side.
+   *
    */
-  virtual uint32_t writeEnd(const Context& context) {
+  virtual void writeEnd(const stdcxx::shared_ptr<ReqRsp>& rr, bool oneway_rq) {
     // default behaviour is to do nothing
-    return 0;
+    boost::ignore_unused(rr);
+    boost::ignore_unused(oneway_rq);
   }
 
   /**

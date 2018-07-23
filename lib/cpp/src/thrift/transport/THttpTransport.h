@@ -50,7 +50,7 @@ public:
 
   uint32_t read(uint8_t* buf, uint32_t len);
 
-  uint32_t readEnd();
+  stdcxx::shared_ptr<ReqRsp> readEnd(bool oneway);
 
   void write(const uint8_t* buf, uint32_t len);
 
