@@ -361,7 +361,7 @@ public:
 
   virtual void flush();
 
-  stdcxx::shared_ptr<ReqRsp> readEnd(bool oneway);
+  stdcxx::shared_ptr<TReqRsp> readEnd(bool oneway_rq);
 
   const uint8_t* borrowSlow(uint8_t* buf, uint32_t* len);
 

@@ -91,7 +91,7 @@ bool PeekProcessor::process(stdcxx::shared_ptr<TProtocol> in,
     in->readFieldEnd();
   }
   in->readMessageEnd();
-  in->getTransport()->readEnd();
+  (void)in->getTransport()->readEnd(true);
 
   //
   // All the data is now in memoryBuffer_ and ready to be processed

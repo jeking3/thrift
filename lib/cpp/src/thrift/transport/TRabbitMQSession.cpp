@@ -284,7 +284,7 @@ uint32_t TRabbitMQSession::give_buf(uint8_t *buf, uint32_t buflen)
     return len;
 }
 
-stdcxx::shared_ptr<ReqRsp> TRabbitMQSession::readEnd(bool oneway_rq)
+stdcxx::shared_ptr<TReqRsp> TRabbitMQSession::readEnd(bool oneway_rq)
 {
     if (!m_rbuf.empty())
     {
@@ -292,10 +292,10 @@ stdcxx::shared_ptr<ReqRsp> TRabbitMQSession::readEnd(bool oneway_rq)
             "read complete thrift message but there is still data in the inbound message buffer");
     }
 
-    stdcxx::shared_ptr<ReqRsp> result =
-        stdcxx::dynamic_pointer_cast<ReqRsp>(stdcxx::shared_ptr<CallInfo>(new CallInfo(m_inbound)));
+    stdcxx::shared_ptr<TReqRsp> result =
+        stdcxx::dynamic_pointer_cast<TReqRsp>(stdcxx::shared_ptr<CallInfo>(new CallInfo(m_inbound)));
 
-    // acknowledge receipt in all cases except for server-side receipt of a request
+    // acknowledge receipt in all cases except for server-side receipt of a request:
     // those are acknowledged later on, right before we send out the reply, so that
     // if the server crashes while processing the message can be redelivered
     if (!m_consumer || oneway_rq)
@@ -349,7 +349,7 @@ void TRabbitMQSession::write_virt(const uint8_t* buf, uint32_t len)
     memcpy(&m_wbuf[olen], buf, len);
 }
 
-void TRabbitMQSession::writeEnd(const stdcxx::shared_ptr<ReqRsp>& rr, bool oneway_rq)
+void TRabbitMQSession::writeEnd(const stdcxx::shared_ptr<TReqRsp>& rr, bool oneway_rq)
 {
     stdcxx::shared_ptr<CallInfo> info = stdcxx::dynamic_pointer_cast<CallInfo>(rr);
 

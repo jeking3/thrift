@@ -79,13 +79,11 @@ class TRabbitMQSession
     virtual void open() /* override */;
     virtual void close() /* override */;
 
-    virtual stdcxx::shared_ptr<ReqRsp> trackReqRsp() /* override */;
-
     virtual uint32_t read_virt(uint8_t* /* buf */, uint32_t /* len */) /* override */;
-    virtual stdcxx::shared_ptr<ReqRsp> readEnd(bool oneway_rq) /* override */;
+    virtual stdcxx::shared_ptr<TReqRsp> readEnd(bool oneway_rq) /* override */;
 
     virtual void write_virt(const uint8_t* /* buf */, uint32_t /* len */) /* override */;
-    virtual void writeEnd(const stdcxx::shared_ptr<ReqRsp>&, bool oneway_rq) /* override */;
+    virtual void writeEnd(const stdcxx::shared_ptr<TReqRsp>&, bool oneway_rq) /* override */;
 
     virtual const std::string getOrigin() /* override */;
 
@@ -95,14 +93,15 @@ class TRabbitMQSession
     // It is necessary to store both the AMQP delivery tag
     // for acknowledgements, and the AMQP reply-to address
     // for each individual request.
-    typedef struct _CallInfo : public ReqRsp
+    struct CallInfo : public TReqRsp
     {
-        _CallInfo() : delivery_tag(0), len(0) { }
+        CallInfo() : delivery_tag(0), len(0) { }
+        virtual ~CallInfo() { }
         void clear() { delivery_tag = 0; len = 0; reply_to.clear(); }
         uint64_t delivery_tag;
         uint32_t len;
         std::string reply_to;
-    } CallInfo;
+    };
 
   private: // methods
     /**

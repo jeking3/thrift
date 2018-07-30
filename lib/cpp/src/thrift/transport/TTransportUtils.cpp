@@ -137,15 +137,15 @@ uint32_t TPipedFileReaderTransport::readAll(uint8_t* buf, uint32_t len) {
   return have;
 }
 
-stdcxx::shared_ptr<ReqRsp> TPipedFileReaderTransport::readEnd(bool oneway) {
-  return TPipedTransport::readEnd(oneway);
+stdcxx::shared_ptr<TReqRsp> TPipedFileReaderTransport::readEnd(bool orq) {
+  return TPipedTransport::readEnd(orq);
 }
 
 void TPipedFileReaderTransport::write(const uint8_t* buf, uint32_t len) {
   TPipedTransport::write(buf, len);
 }
 
-void TPipedFileReaderTransport::writeEnd(const stdcxx::shared_ptr<ReqRsp>& rr, bool orq) {
+void TPipedFileReaderTransport::writeEnd(const stdcxx::shared_ptr<TReqRsp>& rr, bool orq) {
   TPipedTransport::writeEnd(rr, orq);
 }
 

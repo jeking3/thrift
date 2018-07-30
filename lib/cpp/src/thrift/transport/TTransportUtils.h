@@ -138,36 +138,34 @@ public:
 
   uint32_t read(uint8_t* buf, uint32_t len);
 
-  stdcxx::shared_ptr<ReqRsp> readEnd(bool oneway) {
+  stdcxx::shared_ptr<TReqRsp> readEnd(bool orq) {
 
     if (pipeOnRead_) {
       dstTrans_->write(rBuf_, rPos_);
       dstTrans_->flush();
     }
 
-    (void)srcTrans_->readEnd(oneway);
+    (void)srcTrans_->readEnd(orq);
 
     // If requests are being pipelined, copy down our read-ahead data,
     // then reset our state.
     int read_ahead = rLen_ - rPos_;
-    uint32_t bytes = rPos_;
     memcpy(rBuf_, rBuf_ + rPos_, read_ahead);
     rPos_ = 0;
     rLen_ = read_ahead;
 
-    return stdcxx::shared_ptr<ReqRsp>();
+    return stdcxx::shared_ptr<TReqRsp>();
   }
 
   void write(const uint8_t* buf, uint32_t len);
 
-  void writeEnd(const stdcxx::shared_ptr<ReqRsp>& rr, bool orq) {
+  void writeEnd(const stdcxx::shared_ptr<TReqRsp>& rr, bool orq) {
     if (pipeOnWrite_) {
       dstTrans_->write(wBuf_, wLen_);
       dstTrans_->flush();
     }
 
-    (void)srcTrans->writeEnd(orq);
-    return wLen_;
+    (void)srcTrans_->writeEnd(rr, orq);
   }
 
   void flush();
@@ -250,9 +248,9 @@ public:
   void close();
   uint32_t read(uint8_t* buf, uint32_t len);
   uint32_t readAll(uint8_t* buf, uint32_t len);
-  stdcxx::shared_ptr<ReqRsp> readEnd(bool oneway);
+  stdcxx::shared_ptr<TReqRsp> readEnd(bool oneway_rq);
   void write(const uint8_t* buf, uint32_t len);
-  void writeEnd(const stdcxx::shared_ptr<ReqRsp>& rr, bool oneway_rq);
+  void writeEnd(const stdcxx::shared_ptr<TReqRsp>& rr, bool oneway_rq);
   void flush();
 
   // TFileReaderTransport functions

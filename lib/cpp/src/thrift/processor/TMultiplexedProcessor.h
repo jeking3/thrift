@@ -117,18 +117,21 @@ public:
                             stdcxx::shared_ptr<protocol::TProtocol> out,
                             const std::string& name, 
                             int32_t seqid, 
+                            protocol::TMessageType type,
                             const std::string& msg) const {
     in->skip(::apache::thrift::protocol::T_STRUCT);
     in->readMessageEnd();
-    in->getTransport()->readEnd();
-    ::apache::thrift::TApplicationException
-      x(::apache::thrift::TApplicationException::PROTOCOL_ERROR,
-        "TMultiplexedProcessor: " + msg);
-    out->writeMessageBegin(name, ::apache::thrift::protocol::T_EXCEPTION, seqid);
-    x.write(out.get());
-    out->writeMessageEnd();
-    out->getTransport()->writeEnd();
-    out->getTransport()->flush();
+    stdcxx::shared_ptr<transport::TReqRsp> rr = in->getTransport()->readEnd(type == protocol::T_ONEWAY);
+    if (type != protocol::T_ONEWAY) {
+      ::apache::thrift::TApplicationException
+        x(::apache::thrift::TApplicationException::PROTOCOL_ERROR,
+          "TMultiplexedProcessor: " + msg);
+      out->writeMessageBegin(name, ::apache::thrift::protocol::T_EXCEPTION, seqid);
+      x.write(out.get());
+      out->writeMessageEnd();
+      out->getTransport()->writeEnd(rr, false);
+      out->getTransport()->flush();
+    }
     return TException(msg);
 }
    
@@ -159,9 +162,9 @@ public:
     // deal with at the end of this method.
     in->readMessageBegin(name, type, seqid);
 
-    if (type != protocol::T_CALL && type != protocol::T_ONEWAY) {
+    if (type != protocol::T_CALL) {
       // Unexpected message type.
-      throw protocol_error(in, out, name, seqid, "Unexpected message type");
+      throw protocol_error(in, out, name, seqid, type, "Unexpected message type");
     }
 
     // Extract the service name
@@ -187,26 +190,26 @@ public:
                       connectionContext);
       } else {
         // Unknown service.
-        throw protocol_error(in, out, name, seqid, 
+        throw protocol_error(in, out, name, seqid, type,
             "Unknown service: " + tokens[0] +
 				". Did you forget to call registerProcessor()?");
       }
     } else if (tokens.size() == 1) {
-	  if (defaultProcessor) {
+      if (defaultProcessor) {
         // non-multiplexed client forwards to default processor
         return defaultProcessor            
             ->process(stdcxx::shared_ptr<protocol::TProtocol>(
-                          new protocol::StoredMessageProtocol(in, tokens[0], type, seqid)),
+                      new protocol::StoredMessageProtocol(in, tokens[0], type, seqid)),
                       out,
                       connectionContext);
-	  } else {
-		throw protocol_error(in, out, name, seqid,
-			"Non-multiplexed client request dropped. "
-			"Did you forget to call defaultProcessor()?");
-	  }
+      } else {
+        throw protocol_error(in, out, name, seqid, type,
+          "Non-multiplexed client request dropped. "
+          "Did you forget to call defaultProcessor()?");
+      }
     } else {
-		throw protocol_error(in, out, name, seqid,
-		    "Wrong number of tokens.");
+        throw protocol_error(in, out, name, seqid, type,
+          "Wrong number of tokens.");
     }
   }
 

@@ -291,9 +291,8 @@ const uint8_t* TFramedTransport::borrowSlow(uint8_t* buf, uint32_t* len) {
   return NULL;
 }
 
-stdcxx::shared_ptr<ReqRsp> TFramedTransport::readEnd(bool oneway) {
-  // include framing bytes
-  uint32_t bytes_read = static_cast<uint32_t>(rBound_ - rBuf_.get() + sizeof(uint32_t));
+stdcxx::shared_ptr<TReqRsp> TFramedTransport::readEnd(bool orq) {
+  (void)orq;
 
   if (rBufSize_ > bufReclaimThresh_) {
     rBufSize_ = 0;
@@ -301,7 +300,7 @@ stdcxx::shared_ptr<ReqRsp> TFramedTransport::readEnd(bool oneway) {
     setReadBuffer(rBuf_.get(), rBufSize_);
   }
 
-  return stdcxx::shared_ptr<ReqRsp>();
+  return stdcxx::shared_ptr<TReqRsp>();
 }
 
 void TMemoryBuffer::computeRead(uint32_t len, uint8_t** out_start, uint32_t* out_give) {

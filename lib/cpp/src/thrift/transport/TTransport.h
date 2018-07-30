@@ -24,6 +24,7 @@
 #include <thrift/stdcxx.h>
 #include <thrift/transport/TTransportException.h>
 #include <string>
+#include <boost/core/ignore_unused.hpp>
 
 namespace apache {
 namespace thrift {
@@ -47,6 +48,19 @@ uint32_t readAll(Transport_& trans, uint8_t* buf, uint32_t len) {
 
   return have;
 }
+
+/**
+ * @brief A request-response processing base class.
+ *
+ * This is used by readEnd and writeEnd in the transport
+ * to allow multiplexing transports to store enough 
+ * information from a request to route the reply.
+ * A good example of this is a message bus using the RPC
+ * communication pattern (AMQP, reply-to metadata).
+ */
+struct TReqRsp {
+  virtual ~TReqRsp() { }
+};
 
 /**
  * Generic interface for a method of transporting data. A TTransport may be
@@ -125,11 +139,6 @@ public:
   }
 
   /**
-   * @brief A request-response routing object base class.
-   */
-  struct ReqRsp {}
-
-  /**
    * @brief Called when a complete message is read.
    * 
    * This allows transports to understand when a complete
@@ -154,10 +163,10 @@ public:
    *          about the request to route the reply.  On the
    *          client the return value is ignored.
    */
-  virtual stdcxx::shared_ptr<ReqRsp> readEnd(bool oneway_rq) {
+  virtual stdcxx::shared_ptr<TReqRsp> readEnd(bool oneway_rq) {
     // default behaviour is to do nothing
     boost::ignore_unused(oneway_rq);
-    return stdcxx::shared_ptr<ReqRsp>();
+    return stdcxx::shared_ptr<TReqRsp>();
   }
 
   /**
@@ -194,7 +203,7 @@ public:
    *                        ever be true on the client side.
    *
    */
-  virtual void writeEnd(const stdcxx::shared_ptr<ReqRsp>& rr, bool oneway_rq) {
+  virtual void writeEnd(const stdcxx::shared_ptr<TReqRsp>& rr, bool oneway_rq) {
     // default behaviour is to do nothing
     boost::ignore_unused(rr);
     boost::ignore_unused(oneway_rq);

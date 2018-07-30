@@ -2646,7 +2646,7 @@ void t_cpp_generator::generate_service_client(t_service* tservice, string style)
           indent() << "  ::apache::thrift::TApplicationException x;" << endl <<
           indent() << "  x.read(" << _this << "iprot_);" << endl <<
           indent() << "  " << _this << "iprot_->readMessageEnd();" << endl <<
-          indent() << "  " << _this << "iprot_->getTransport()->readEnd();" << endl;
+          indent() << "  " << _this << "(void)iprot_->getTransport()->readEnd(false);" << endl;
         if (style == "Cob" && !gen_no_client_completion_) {
           out << indent() << "  completed = true;" << endl << indent() << "  completed__(true);"
               << endl;
@@ -2660,7 +2660,7 @@ void t_cpp_generator::generate_service_client(t_service* tservice, string style)
           indent() << "if (mtype != ::apache::thrift::protocol::T_REPLY) {" << endl <<
           indent() << "  " << _this << "iprot_->skip(" << "::apache::thrift::protocol::T_STRUCT);" << endl <<
           indent() << "  " << _this << "iprot_->readMessageEnd();" << endl <<
-          indent() << "  " << _this << "iprot_->getTransport()->readEnd();" << endl;
+          indent() << "  " << _this << "(void)iprot_->getTransport()->readEnd(false);" << endl;
         if (style == "Cob" && !gen_no_client_completion_) {
           out << indent() << "  completed = true;" << endl << indent() << "  completed__(false);"
               << endl;
@@ -2670,7 +2670,7 @@ void t_cpp_generator::generate_service_client(t_service* tservice, string style)
           indent() << "if (fname.compare(\"" << (*f_iter)->get_name() << "\") != 0) {" << endl <<
           indent() << "  " << _this << "iprot_->skip(" << "::apache::thrift::protocol::T_STRUCT);" << endl <<
           indent() << "  " << _this << "iprot_->readMessageEnd();" << endl <<
-          indent() << "  " << _this << "iprot_->getTransport()->readEnd();" << endl;
+          indent() << "  " << _this << "(void)iprot_->getTransport()->readEnd(false);" << endl;
         if (style == "Cob" && !gen_no_client_completion_) {
           out << indent() << "  completed = true;" << endl << indent() << "  completed__(false);"
               << endl;
@@ -2697,7 +2697,7 @@ void t_cpp_generator::generate_service_client(t_service* tservice, string style)
 
         out << indent() << "result.read(" << _this << "iprot_);" << endl << indent() << _this
             << "iprot_->readMessageEnd();" << endl << indent() << _this
-            << "iprot_->getTransport()->readEnd();" << endl << endl;
+            << "(void)iprot_->getTransport()->readEnd(false);" << endl << endl;
 
         // Careful, only look for _result if not a void function
         if (!(*f_iter)->get_returntype()->is_void()) {
@@ -3081,14 +3081,14 @@ void ProcessorGenerator::generate_dispatch_call(bool template_protocol) {
   if (extends_.empty()) {
     f_out_ << indent() << "  iprot->skip(::apache::thrift::protocol::T_STRUCT);" << endl << indent()
            << "  iprot->readMessageEnd();" << endl << indent()
-           << "  iprot->getTransport()->readEnd();" << endl << indent()
+           << "  stdcxx::shared_ptr<transport::TReqRsp> rr = iprot->getTransport()->readEnd(true);" << endl << indent()
            << "  ::apache::thrift::TApplicationException "
               "x(::apache::thrift::TApplicationException::UNKNOWN_METHOD, \"Invalid method name: "
               "'\"+fname+\"'\");" << endl << indent()
            << "  oprot->writeMessageBegin(fname, ::apache::thrift::protocol::T_EXCEPTION, seqid);"
            << endl << indent() << "  x.write(oprot);" << endl << indent()
            << "  oprot->writeMessageEnd();" << endl << indent()
-           << "  oprot->getTransport()->writeEnd();" << endl << indent()
+           << "  oprot->getTransport()->writeEnd(rr, false);" << endl << indent()
            << "  oprot->getTransport()->flush();" << endl << indent()
            << (style_ == "Cob" ? "  return cob(true);" : "  return true;") << endl;
   } else {

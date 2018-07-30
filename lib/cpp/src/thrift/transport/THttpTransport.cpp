@@ -71,7 +71,7 @@ uint32_t THttpTransport::read(uint8_t* buf, uint32_t len) {
   return readBuffer_.read(buf, len);
 }
 
-uint32_t THttpTransport::readEnd(const Context& ctx) {
+stdcxx::shared_ptr<TReqRsp> THttpTransport::readEnd(bool oneway_rq) {
   // Read any pending chunked data (footers etc.)
   if (chunked_) {
     while (!chunkedDone_) {
@@ -79,7 +79,7 @@ uint32_t THttpTransport::readEnd(const Context& ctx) {
     }
   }
 
-  if (ctx.request && ctx.oneway) {
+  if (oneway_rq) {
     // @@@ TODO: THRIFT-3877
     //           If the message is a oneway request,
     //           the transport still has to issue
@@ -87,7 +87,7 @@ uint32_t THttpTransport::readEnd(const Context& ctx) {
     ;
   }
 
-  return 0;
+  return stdcxx::shared_ptr<TReqRsp>();
 }
 
 uint32_t THttpTransport::readMoreData() {
