@@ -12,7 +12,7 @@
 :: limitations under the License.
 ::
 
-@ECHO OFF
+::@ECHO OFF
 
 IF "%PROFILE%" == "MSVC2012" (
   CALL "C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\vcvarsall.bat" %PLATFORM%
@@ -107,15 +107,18 @@ IF "%PROFILE:~0,4%" == "MSVC" (
 GOTO :EOF
 
 :SETUPNEWERMSVC
-  FOR /F "USEBACKQ TOKENS=*" %%i IN (`call "%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -version "[15.0,16.0)" -property installationPath`) DO (
-    IF "%MSVCROOT%" == "" (SET MSVCROOT=%%i)
+  :: If VsDevCmd.bat has already executed, as is the case in the
+  :: msvc2017 docker container, skip this...
+  IF NOT DEFINED VSCMD_VER (
+    FOR /F "USEBACKQ TOKENS=*" %%i IN (`call "%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -version "[15.0,16.0)" -property installationPath`) DO (
+      IF "%MSVCROOT%" == "" (SET MSVCROOT=%%i)
+    )
+    SET MSVCPLAT=x86
+    IF "%PLATFORM%" == "x64" (SET MSVCPLAT=amd64)
+
+    SET CURRENTDIR=%CD%
+    CALL "!MSVCROOT!\Common7\Tools\VsDevCmd.bat" -arch=!MSVCPLAT! || EXIT /B
+    CD %CURRENTDIR%
+    EXIT /B
   )
-  SET MSVCPLAT=x86
-  IF "%PLATFORM%" == "x64" (SET MSVCPLAT=amd64)
-
-  SET CURRENTDIR=%CD%
-  CALL "!MSVCROOT!\Common7\Tools\VsDevCmd.bat" -arch=!MSVCPLAT! || EXIT /B
-  CD %CURRENTDIR%
-  EXIT /B
-
 :EOF
