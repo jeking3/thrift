@@ -38,6 +38,11 @@ matrix:
 
 environment:
   matrix:
+   - PROFILE: CYGWIN
+     PLATFORM: x64
+     CONFIGURATION: RelWithDebInfo
+     DISABLED_TESTS: (ZlibTest|OpenSSLManualInitTest|TNonblockingServerTest|StressTestNonBlocking)
+
    - PROFILE: MSVC2017
      PLATFORM: x64
      CONFIGURATION: Release
@@ -51,7 +56,7 @@ environment:
 
    - PROFILE: MSVC2015
      PLATFORM: x86
-     CONFIGURATION: Release
+     CONFIGURATION: Debug
      BUILD_SHARED_LIBS: OFF
      BOOST_VERSION: 1.62.0
      LIBEVENT_VERSION: 2.0.22
@@ -65,16 +70,6 @@ environment:
      PLATFORM: x64
      CONFIGURATION: RelWithDebInfo
      DISABLED_TESTS: StressTestNonBlocking
-
-   - PROFILE: CYGWIN
-     PLATFORM: x86
-     CONFIGURATION: RelWithDebInfo
-     DISABLED_TESTS: (ZlibTest|OpenSSLManualInitTest|TNonblockingServerTest|StressTestNonBlocking)
-
-#  - PROFILE: CYGWIN
-#    PLATFORM: x64
-#    CONFIGURATION: RelWithDebInfo
-#    DISABLED_TESTS: (ZlibTest|OpenSSLManualInitTest|TNonblockingServerTest|StressTestNonBlocking)
 
 install:
   - cd %APPVEYOR_BUILD_FOLDER%
