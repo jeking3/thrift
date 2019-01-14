@@ -207,7 +207,6 @@ literal_begin (['\"])
 "cpp_include"        { return tok_cpp_include;          }
 "cpp_type"           { return tok_cpp_type;             }
 "java_package"       { error_unsupported_namespace_decl("java_package", "java"); /* do nothing */ }
-"cocoa_prefix"       { error_unsupported_namespace_decl("cocoa_prefix", "cocoa"); /* do nothing */ }
 "csharp_namespace"   { error_unsupported_namespace_decl("csharp"); /* do nothing */ }
 "delphi_namespace"   { error_unsupported_namespace_decl("delphi"); /* do nothing */ }
 "php_namespace"      { error_unsupported_namespace_decl("php"); /* do nothing */ }
@@ -215,7 +214,7 @@ literal_begin (['\"])
 "perl_package"       { error_unsupported_namespace_decl("perl_package", "perl"); /* do nothing */ }
 "ruby_namespace"     { error_unsupported_namespace_decl("ruby"); /* do nothing */ }
 "smalltalk_category" { error_unsupported_namespace_decl("smalltalk_category", "smalltalk.category"); /* do nothing */ }
-"smalltalk_prefix"   { error_unsupported_namespace_decl("smalltalk_category", "smalltalk.category"); /* do nothing */ }
+"smalltalk_prefix"   { error_unsupported_namespace_decl("smalltalk_prefix", "smalltalk.prefix"); /* do nothing */ }
 "xsd_all"            { return tok_xsd_all;              }
 "xsd_optional"       { return tok_xsd_optional;         }
 "xsd_nillable"       { return tok_xsd_nillable;         }

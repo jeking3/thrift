@@ -56,7 +56,6 @@ FILES[appveyor.yml]=simpleReplace
 FILES[bower.json]=jsonReplace
 FILES[configure.ac]=configureReplace
 FILES[contrib/thrift.spec]=simpleReplace
-FILES[lib/cocoa/src/Thrift.h]=simpleReplace
 FILES[lib/csharp/ThriftMSBuildTask/Properties/AssemblyInfo.cs]=simpleReplace
 FILES[lib/csharp/ThriftMSBuildTask/ThriftMSBuildTask.csproj]=simpleReplace
 FILES[lib/csharp/src/Properties/AssemblyInfo.cs]=simpleReplace

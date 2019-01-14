@@ -35,15 +35,11 @@ A C++ include adds a custom C++ include to the output of the C++ code generator 
 
 A namespace declares which namespaces/package/module/etc. the type definitions in this file will be declared in for the target languages. The namespace scope indicates which language the namespace applies to; a scope of '*' indicates that the namespace applies to all target languages.
 
-    [5]  Namespace       ::=  ( 'namespace' ( NamespaceScope Identifier ) |
-                                            ( 'smalltalk.category' STIdentifier ) |
-                                            ( 'smalltalk.prefix' Identifier ) ) |
-                              ( 'php_namespace' Literal ) |
-                              ( 'xsd_namespace' Literal )
+    [5]  Namespace       ::=  ( 'namespace' ( NamespaceScope Identifier ) )
 
-    [6]  NamespaceScope  ::=  '*' | 'cpp' | 'java' | 'py' | 'perl' | 'rb' | 'cocoa' | 'csharp'
+    [6]  NamespaceScope  ::=  'c_glib' | 'cpp' | 'csharp' | 'delphi' | 'go' | 'java' | 'js' | 'lua' | 'netcore' | 'perl' | 'php' | 'py' | 'py.twisted' | 'rb' | 'st' | 'xsd'
 
-N.B.: Smalltalk has two distinct types of namespace commands:
+N.B.: Smalltalk has two distinct types of namespaces:
 
 - smalltalk.prefix: Prepended to generated classnames.
   - Smalltalk does not have namespaces for classes, so prefixes
@@ -57,10 +53,6 @@ N.B.: Smalltalk has two distinct types of namespace commands:
   Methods will not be categorized beyond "as yet uncategorized".
   - Smalltalk allows filing both classes and methods within classes into named
     groups. These named groups of methods are called categories.
-
-N.B.: The `php_namespace` directive will be deprecated at some point in the future in favor of the scoped syntax, but the scoped syntax is not yet supported for PHP.
-
-N.B.: The `xsd_namespace` directive has some purpose internal to Facebook but serves no purpose in Thrift itself. Use of this feature is strongly discouraged
 
 ## Definition
 
