@@ -230,11 +230,10 @@ class TProtocolBase(object):
             for i in range(size):
                 self.skip(etype)
             self.readListEnd()
-        else
-          raise TProtocolException(
-              TProtocolException.INVALID_DATA,
-              "invalid data"
-              )
+        else:
+            raise TProtocolException(
+                TProtocolException.INVALID_DATA,
+                "invalid TType")
 
     # tuple of: ( 'reader method' name, is_container bool, 'writer_method' name )
     _TTYPE_HANDLERS = (
