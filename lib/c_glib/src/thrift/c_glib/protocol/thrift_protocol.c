@@ -534,6 +534,9 @@ thrift_protocol_skip (ThriftProtocol *protocol, ThriftType type, GError **error)
         return result;
       }
     default:
+      g_set_error (error, THRIFT_PROTOCOL_ERROR,
+                   THRIFT_PROTOCOL_ERROR_INVALID_DATA,
+                   "unrecognized type");
       return 0;
   }
 }
