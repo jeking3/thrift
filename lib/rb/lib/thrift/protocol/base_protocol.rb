@@ -366,7 +366,7 @@ module Thrift
         end
         read_list_end
       else
-        raise ProtocolException.new(ProtocolException::INVLAID_DATA, 'Invalid data')
+        raise ProtocolException.new(ProtocolException::INVALID_DATA, 'Invalid data')
       end
     end
     
