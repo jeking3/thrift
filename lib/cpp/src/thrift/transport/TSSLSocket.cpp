@@ -37,12 +37,12 @@
 #include <fcntl.h>
 #endif
 
-#define OPENSSL_VERSION_NO_THREAD_ID_BEFORE    0x10000000L
-#define OPENSSL_ENGINE_CLEANUP_REQUIRED_BEFORE 0x10100000L
+#define OPENSSL_DEPRECATED_IN_1_0_0            0x10000000L
+#define OPENSSL_DEPRECATED_IN_1_1_0            0x10100000L
 
 #include <boost/shared_array.hpp>
 #include <openssl/opensslv.h>
-#if (OPENSSL_VERSION_NUMBER < OPENSSL_ENGINE_CLEANUP_REQUIRED_BEFORE)
+#if (OPENSSL_VERSION_NUMBER < OPENSSL_DEPRECATED_IN_1_1_0)
 #include <openssl/engine.h>
 #endif
 #include <openssl/err.h>
@@ -70,6 +70,7 @@ namespace transport {
 static bool openSSLInitialized = false;
 static boost::shared_array<Mutex> mutexes;
 
+#if (OPENSSL_VERSION_NUMBER < OPENSSL_DEPRECATED_IN_1_1_0)
 static void callbackLocking(int mode, int n, const char*, int) {
   if (mode & CRYPTO_LOCK) {
     // assertion of (px != 0) here typically means that a TSSLSocket's lifetime
@@ -80,16 +81,6 @@ static void callbackLocking(int mode, int n, const char*, int) {
     mutexes[n].unlock();
   }
 }
-
-#if (OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_NO_THREAD_ID_BEFORE)
-static unsigned long callbackThreadID() {
-#ifdef _WIN32
-  return (unsigned long)GetCurrentThreadId();
-#else
-  return (unsigned long)pthread_self();
-#endif
-}
-#endif
 
 static CRYPTO_dynlock_value* dyn_create(const char*, int) {
   return new CRYPTO_dynlock_value;
@@ -108,6 +99,17 @@ static void dyn_lock(int mode, struct CRYPTO_dynlock_value* lock, const char*, i
 static void dyn_destroy(struct CRYPTO_dynlock_value* lock, const char*, int) {
   delete lock;
 }
+#endif
+
+#if (OPENSSL_VERSION_NUMBER < OPENSSL_DEPRECATED_IN_1_0_0)
+static unsigned long callbackThreadID() {
+#ifdef _WIN32
+  return (unsigned long)GetCurrentThreadId();
+#else
+  return (unsigned long)pthread_self();
+#endif
+}
+#endif
 
 void initializeOpenSSL() {
   if (openSSLInitialized) {
@@ -126,16 +128,18 @@ void initializeOpenSSL() {
   mutexes = boost::shared_array<Mutex>(new Mutex[ ::CRYPTO_num_locks()]);
 #endif
 
-#if (OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_NO_THREAD_ID_BEFORE)
+#if (OPENSSL_VERSION_NUMBER < OPENSSL_DEPRECATED_IN_1_0_0)
   CRYPTO_set_id_callback(callbackThreadID);
 #endif
 
+#if (OPENSSL_VERSION_NUMBER < OPENSSL_DEPRECATED_IN_1_1_0)
   CRYPTO_set_locking_callback(callbackLocking);
 
   // dynamic locking
   CRYPTO_set_dynlock_create_callback(dyn_create);
   CRYPTO_set_dynlock_lock_callback(dyn_lock);
   CRYPTO_set_dynlock_destroy_callback(dyn_destroy);
+#endif
 }
 
 void cleanupOpenSSL() {
@@ -146,13 +150,15 @@ void cleanupOpenSSL() {
 
   // https://wiki.openssl.org/index.php/Library_Initialization#Cleanup
   // we purposefully do NOT call FIPS_mode_set(0) and leave it up to the enclosing application to manage FIPS entirely
-#if (OPENSSL_VERSION_NUMBER < OPENSSL_ENGINE_CLEANUP_REQUIRED_BEFORE)
+#if (OPENSSL_VERSION_NUMBER < OPENSSL_DEPRECATED_IN_1_1_0)
   ENGINE_cleanup();             // https://www.openssl.org/docs/man1.1.0/crypto/ENGINE_cleanup.html - cleanup call is needed before 1.1.0
 #endif
   CONF_modules_unload(1);
   EVP_cleanup();
   CRYPTO_cleanup_all_ex_data();
+#if (OPENSSL_VERSION_NUMBER < OPENSSL_DEPRECATED_IN_1_0_0)
   ERR_remove_state(0);
+#endif
   ERR_free_strings();
 
   mutexes.reset();
@@ -163,24 +169,8 @@ static bool matchName(const char* host, const char* pattern, int size);
 static char uppercase(char c);
 
 // SSLContext implementation
-SSLContext::SSLContext(const SSLProtocol& protocol) {
-  if (protocol == SSLTLS) {
-    ctx_ = SSL_CTX_new(SSLv23_method());
-#ifndef OPENSSL_NO_SSL3
-  } else if (protocol == SSLv3) {
-    ctx_ = SSL_CTX_new(SSLv3_method());
-#endif
-  } else if (protocol == TLSv1_0) {
-    ctx_ = SSL_CTX_new(TLSv1_method());
-  } else if (protocol == TLSv1_1) {
-    ctx_ = SSL_CTX_new(TLSv1_1_method());
-  } else if (protocol == TLSv1_2) {
-    ctx_ = SSL_CTX_new(TLSv1_2_method());
-  } else {
-    /// UNKNOWN PROTOCOL!
-    throw TSSLException("SSL_CTX_new: Unknown protocol");
-  }
-
+SSLContext::SSLContext() {
+  ctx_ = SSL_CTX_new(TLS_method());
   if (ctx_ == nullptr) {
     string errors;
     buildErrors(errors);
@@ -188,12 +178,11 @@ SSLContext::SSLContext(const SSLProtocol& protocol) {
   }
   SSL_CTX_set_mode(ctx_, SSL_MODE_AUTO_RETRY);
 
-  // Disable horribly insecure SSLv2 and SSLv3 protocols but allow a handshake
-  // with older clients so they get a graceful denial.
-  if (protocol == SSLTLS) {
-      SSL_CTX_set_options(ctx_, SSL_OP_NO_SSLv2);
-      SSL_CTX_set_options(ctx_, SSL_OP_NO_SSLv3);   // THRIFT-3164
-  }
+  // Disable insecure protocol levels as part of best practices
+  SSL_CTX_set_options(ctx_, SSL_OP_NO_SSLv2);
+  SSL_CTX_set_options(ctx_, SSL_OP_NO_SSLv3);   // THRIFT-3164
+  SSL_CTX_set_options(ctx_, SSL_OP_NO_TLSv1);   // THRIFT-3165
+  SSL_CTX_set_options(ctx_, SSL_OP_NO_TLSv1_1); // THRIFT-3165
 }
 
 SSLContext::~SSLContext() {
@@ -379,7 +368,9 @@ void TSSLSocket::close() {
     SSL_free(ssl_);
     ssl_ = nullptr;
     handshakeCompleted_ = false;
+#if (OPENSSL_VERSION_NUMBER < OPENSSL_DEPRECATED_IN_1_0_0)
     ERR_remove_state(0);
+#endif
   }
   TSocket::close();
 }
@@ -731,7 +722,11 @@ void TSSLSocket::authorize() {
       if (name == nullptr) {
         continue;
       }
+#if (OPENSSL_VERSION_NUMBER < OPENSSL_DEPRECATED_IN_1_1_0)
       char* data = (char*)ASN1_STRING_data(name->d.ia5);
+#else
+      const char *data = (const char *)ASN1_STRING_get0_data(name->d.ia5);
+#endif
       int length = ASN1_STRING_length(name->d.ia5);
       switch (name->type) {
       case GEN_DNS:
@@ -850,7 +845,7 @@ uint64_t TSSLSocketFactory::count_ = 0;
 Mutex TSSLSocketFactory::mutex_;
 bool TSSLSocketFactory::manualOpenSSLInitialization_ = false;
 
-TSSLSocketFactory::TSSLSocketFactory(SSLProtocol protocol) : server_(false) {
+TSSLSocketFactory::TSSLSocketFactory(std::shared_ptr<SSLContext> context) : server_(false) {
   Guard guard(mutex_);
   if (count_ == 0) {
     if (!manualOpenSSLInitialization_) {
@@ -859,7 +854,7 @@ TSSLSocketFactory::TSSLSocketFactory(SSLProtocol protocol) : server_(false) {
     randomize();
   }
   count_++;
-  ctx_ = std::make_shared<SSLContext>(protocol);
+  ctx_ = context;
 }
 
 TSSLSocketFactory::~TSSLSocketFactory() {

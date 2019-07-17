@@ -23,6 +23,7 @@
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
 #include <boost/thread.hpp>
+#include <list>
 #include <memory>
 #include <thrift/transport/TSSLServerSocket.h>
 #include <thrift/transport/TSSLSocket.h>
@@ -32,6 +33,7 @@
 #include <signal.h>
 #endif
 
+using apache::thrift::transport::SSLContext;
 using apache::thrift::transport::TSSLServerSocket;
 using apache::thrift::transport::TServerTransport;
 using apache::thrift::transport::TSSLSocket;
@@ -97,7 +99,7 @@ BOOST_GLOBAL_FIXTURE(GlobalFixture)
 
 struct SecurityFixture
 {
-    void server(apache::thrift::transport::SSLProtocol protocol)
+    void server(std::shared_ptr<SSLContext> context)
     {
         try
         {
@@ -106,7 +108,7 @@ struct SecurityFixture
             shared_ptr<TSSLSocketFactory> pServerSocketFactory;
             shared_ptr<TSSLServerSocket> pServerSocket;
 
-            pServerSocketFactory.reset(new TSSLSocketFactory(static_cast<apache::thrift::transport::SSLProtocol>(protocol)));
+            pServerSocketFactory.reset(new TSSLSocketFactory(context));
             pServerSocketFactory->ciphers("ALL:!ADH:!LOW:!EXP:!MD5:@STRENGTH");
             pServerSocketFactory->loadCertificate(certFile("server.crt").string().c_str());
             pServerSocketFactory->loadPrivateKey(certFile("server.key").string().c_str());
@@ -150,7 +152,7 @@ struct SecurityFixture
         }
     }
 
-    void client(apache::thrift::transport::SSLProtocol protocol)
+    void client(std::shared_ptr<SSLContext> context)
     {
         try
         {
@@ -159,7 +161,7 @@ struct SecurityFixture
 
             try
             {
-                pClientSocketFactory.reset(new TSSLSocketFactory(static_cast<apache::thrift::transport::SSLProtocol>(protocol)));
+                pClientSocketFactory.reset(new TSSLSocketFactory(context));
                 pClientSocketFactory->authenticate(true);
                 pClientSocketFactory->loadCertificate(certFile("client.crt").string().c_str());
                 pClientSocketFactory->loadPrivateKey(certFile("client.key").string().c_str());
@@ -192,82 +194,43 @@ struct SecurityFixture
         }
     }
 
-    static const char *protocol2str(size_t protocol)
-    {
-        static const char *strings[apache::thrift::transport::LATEST + 1] =
-        {
-                "SSLTLS",
-                "SSLv2",
-                "SSLv3",
-                "TLSv1_0",
-                "TLSv1_1",
-                "TLSv1_2"
-        };
-        return strings[protocol];
-    }
-
     boost::mutex mMutex;
     boost::condition_variable mCVar;
     int mPort;
     bool mConnected;
 };
 
+class SSLContextOnlyTLSv12OrLater : public SSLContext
+{
+  public:
+    SSLContextOnlyTLSv12OrLater() : SSLContext()
+    {
+        // SSLContext already disables SSLv2 and SSLv3
+        // We disable TLSv1_0 and TLSv1_1
+        SSL_CTX_set_options(get(), SSL_OP_NO_TLSv1);
+        SSL_CTX_set_options(get(), SSL_OP_NO_TLSv1_1);
+    }
+};
+
 BOOST_FIXTURE_TEST_SUITE(BOOST_TEST_MODULE, SecurityFixture)
 
-BOOST_AUTO_TEST_CASE(ssl_security_matrix)
+BOOST_AUTO_TEST_CASE(ssl_default_connect_ok)
 {
+    // Tests the default SSLProtocol connection
     try
     {
-        // matrix of connection success between client and server with different SSLProtocol selections
-        bool matrix[apache::thrift::transport::LATEST + 1][apache::thrift::transport::LATEST + 1] =
-        {
-    //   server    = SSLTLS   SSLv2    SSLv3    TLSv1_0  TLSv1_1  TLSv1_2
-    // client
-    /* SSLTLS  */  { true,    false,   false,   true,    true,    true    },
-    /* SSLv2   */  { false,   false,   false,   false,   false,   false   },
-    /* SSLv3   */  { false,   false,   true,    false,   false,   false   },
-    /* TLSv1_0 */  { true,    false,   false,   true,    false,   false   },
-    /* TLSv1_1 */  { true,    false,   false,   false,   true,    false   },
-    /* TLSv1_2 */  { true,    false,   false,   false,   false,   true    }
-        };
+        boost::mutex::scoped_lock lock(mMutex);
 
-        for (size_t si = 0; si <= apache::thrift::transport::LATEST; ++si)
-        {
-            for (size_t ci = 0; ci <= apache::thrift::transport::LATEST; ++ci)
-            {
-                if (si == 1 || ci == 1)
-                {
-                    // Skip all SSLv2 cases - protocol not supported
-                    continue;
-                }
-
-#ifdef OPENSSL_NO_SSL3
-                if (si == 2 || ci == 2)
-                {
-                    // Skip all SSLv3 cases - protocol not supported
-                    continue;
-                }
-#endif
-
-                boost::mutex::scoped_lock lock(mMutex);
-
-                BOOST_TEST_MESSAGE(boost::format("TEST: Server = %1%, Client = %2%")
-                    % protocol2str(si) % protocol2str(ci));
-
-                mConnected = false;
-                // thread_group manages the thread lifetime - ignore the return value of create_thread
-                boost::thread_group threads;
-                (void)threads.create_thread(bind(&SecurityFixture::server, this, static_cast<apache::thrift::transport::SSLProtocol>(si)));
-                mCVar.wait(lock);           // wait for listen() to succeed
-                lock.unlock();
-                (void)threads.create_thread(bind(&SecurityFixture::client, this, static_cast<apache::thrift::transport::SSLProtocol>(ci)));
-                threads.join_all();
-
-                BOOST_CHECK_MESSAGE(mConnected == matrix[ci][si],
-                        boost::format("      Server = %1%, Client = %2% expected mConnected == %3% but was %4%")
-                            % protocol2str(si) % protocol2str(ci) % matrix[ci][si] % mConnected);
-            }
-        }
+        mConnected = false;
+        // thread_group manages the thread lifetime - ignore the return value of create_thread
+        boost::thread_group threads;
+        (void)threads.create_thread(bind(&SecurityFixture::server, this, std::make_shared<SSLContextOnlyTLSv12OrLater>()));
+        mCVar.wait(lock);           // wait for listen() to succeed
+        lock.unlock();
+        (void)threads.create_thread(bind(&SecurityFixture::client, this, std::make_shared<SSLContext>()));
+        threads.join_all();
+        
+        BOOST_CHECK(mConnected);
     }
     catch (std::exception& ex)
     {

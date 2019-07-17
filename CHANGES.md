@@ -15,6 +15,7 @@
 ### Breaking Changes
 
 - [THRIFT-4743](https://issues.apache.org/jira/browse/THRIFT-4743) - compiler: removed the plug-in mechanism
+- [THRIFT-3165](https://issues.apache.org/jira/browse/THRIFT-3165) - cpp: disable insecure TLSv1.0 and TLSv1.1 by default
 - [THRIFT-4720](https://issues.apache.org/jira/browse/THRIFT-4720) - cpp: C++03/C++98 support has been removed; also removed boost as a runtime dependency
 - [THRIFT-4730](https://issues.apache.org/jira/browse/THRIFT-4730) - cpp: BoostThreadFactory, PosixThreadFactory, StdThreadFactory removed
 - [THRIFT-4732](https://issues.apache.org/jira/browse/THRIFT-4732) - cpp: CMake build changed to use BUILD_SHARED_LIBS

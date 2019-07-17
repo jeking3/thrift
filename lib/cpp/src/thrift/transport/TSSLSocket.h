@@ -34,15 +34,14 @@ namespace transport {
 class AccessManager;
 class SSLContext;
 
-enum SSLProtocol {
-  SSLTLS  = 0,  // Supports SSLv2 and SSLv3 handshake but only negotiates at TLSv1_0 or later.
-//SSLv2   = 1,  // HORRIBLY INSECURE!
-  SSLv3   = 2,  // Supports SSLv3 only - also horribly insecure!
-  TLSv1_0 = 3,  // Supports TLSv1_0 or later.
-  TLSv1_1 = 4,  // Supports TLSv1_1 or later.
-  TLSv1_2 = 5,  // Supports TLSv1_2 or later.
-  LATEST  = TLSv1_2
-};
+// THRIFT-3165: SSLProtocol has been removed because OpenSSL 1.1
+// deprecated the use of the _method() calls for the handshake.
+// To take full control of the SSL Protocol Levels for negotiation,
+// you can subclass TSSLContext and clear then set the OpenSSL
+// options to suit your needs.
+//
+// As of thrift-0.13.0 thrift disables SSLv2, SSLv3, TLSv1_0, and
+// TLSv1_1 as they have known serious vulnerabilities.
 
 #define TSSL_EINTR 0
 #define TSSL_DATA 1
@@ -203,10 +202,8 @@ class TSSLSocketFactory {
 public:
   /**
    * Constructor/Destructor
-   *
-   * @param protocol The SSL/TLS protocol to use.
    */
-  TSSLSocketFactory(SSLProtocol protocol = SSLTLS);
+  TSSLSocketFactory(std::shared_ptr<SSLContext> context = std::make_shared<SSLContext>());
   virtual ~TSSLSocketFactory();
   /**
    * Create an instance of TSSLSocket with a fresh new socket.
@@ -348,7 +345,7 @@ public:
  */
 class SSLContext {
 public:
-  SSLContext(const SSLProtocol& protocol = SSLTLS);
+  SSLContext();
   virtual ~SSLContext();
   SSL* createSSL();
   SSL_CTX* get() { return ctx_; }
